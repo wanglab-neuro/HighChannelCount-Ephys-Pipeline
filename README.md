@@ -1,2 +1,2 @@
-# BlackRock-Pipeline
-for Wenxi, Vincent, and Jaehong's silicon probe recording analysis
+# High Channel Count Ephys Pipeline
+for silicon probe data processing
