@@ -1,8 +1,11 @@
 function [paramFStatus,cmdout,configFName]=GenerateKSConfigFile(fName, fDir, userParams)
 % Creates configuration file for KiloSort
 
-%check if name starts with a number
-if fName
+%check if name starts with a digit
+if isstrprop(fName(1),'digit')
+    fName=['W' fName];
+end
+    
 % check if name is too long
 if length(fName)>=48 %too long, will exceed 63 character limit
     fName=fName(1:48);

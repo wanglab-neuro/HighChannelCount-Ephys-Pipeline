@@ -94,35 +94,36 @@ movefile(ops.fproc, outfN);
 rez.ops.fproc = fullfile(ops.exportDir, [ops.fileName '.dat']);
 
 %% Save python results file for Phy
+fprintf('Saving results to Phy  \n')
+dataDir = fullfile(dataDir, 'kilosort3');
+if ~exist(dataDir,'dir')
+    mkdir(dataDir)
+end
 if exist(fullfile(dataDir,'params.py'),'file')
     delete(fullfile(dataDir,'params.py'))
 end
-fprintf('Saving results to Phy  \n')
-rootZ = fullfile(rootZ, 'kilosort3');
-mkdir(rootZ)
-rezToPhy2(rez, rootZ);
+rezToPhy2(rez, dataDir);
 
-% TO BE REMOVED
-% %% save final results
+%% Save results file for Matlab
 % % discard features in final rez file (too slow to save)
-% rez.cProj = [];
-% rez.cProjPC = [];
-% 
+rez.cProj = [];
+rez.cProjPC = [];
+ 
 % %KS2.5 final time sorting of spikes, for apps that use st3 directly
-% [~, isort]   = sortrows(rez.st3);
-% rez.st3      = rez.st3(isort, :);
-% 
+[~, isort]   = sortrows(rez.st3);
+rez.st3      = rez.st3(isort, :);
+
 % %KS2.5 Ensure all GPU arrays are transferred to CPU side before saving to .mat
-% rez_fields = fieldnames(rez);
-% for i = 1:numel(rez_fields)
-%     field_name = rez_fields{i};
-%     if(isa(rez.(field_name), 'gpuArray'))
-%         rez.(field_name) = gather(rez.(field_name));
-%     end
-% end
-% 
+rez_fields = fieldnames(rez);
+for i = 1:numel(rez_fields)
+    field_name = rez_fields{i};
+    if(isa(rez.(field_name), 'gpuArray'))
+        rez.(field_name) = gather(rez.(field_name));
+    end
+end
+
 % % save final results as rez2
-% fprintf('Saving final results in rez2  \n')
-% fname = fullfile(dataDir, 'rez2.mat');
-% save(fname, 'rez', '-v7.3');
+fprintf('Saving final results in rez2  \n')
+fname = fullfile(dataDir, 'rez2.mat');
+save(fname, 'rez', '-v7.3');
 
