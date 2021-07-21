@@ -1,4 +1,9 @@
-function [data,rec]=LoadEphys_TBSI(dname)
+function [data,rec,TTLs]=LoadEphys_TBSI(dName,fName)
+wb = waitbar( 0, 'Reading Data File...' );
+
+rec.dirName=dName;
+rec.fileName=fName;
+
 dirBranch=regexp(strrep(dname,'-','_'),['\' filesep '\w+'],'match');
 
 dirlisting = dir(dname);
@@ -21,3 +26,7 @@ for fnum=1:rec.numRecChan
     data(fnum,:)=(richData.contvars{1, 1}.data)';
 end
 rec.sys='TBSI';
+
+%% TTLs
+% not coded
+TTLs=[];

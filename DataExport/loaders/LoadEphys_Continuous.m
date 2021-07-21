@@ -1,5 +1,9 @@
-function [data,rec]=LoadEphys_Continuous(dname)
-%% Open Ephys old format  
+function [data,rec,TTLs]=LoadEphys_Continuous(dName,fName)
+%% Open Ephys old format
+wb = waitbar( 0, 'Reading Data File...' );
+
+rec.dirName=dName;
+rec.fileName=fName;
 
 %list all .continuous data files
 fileListing=dir(dname);
@@ -18,3 +22,13 @@ rec.samplingRate=recinfo(1).header.sampleRate;
 rec.numRecChan=chNum;
 rec.date=recinfo(1).header.date_created;
 rec.sys='OpenEphys';
+
+%% TTLs
+waitbar( 0.5, wb, 'getting TTL times and structure');
+% Open Ephys format
+try
+    TTLs=getOE_Trials('channel_states.npy');
+catch
+    % May be the old format
+    TTLs=getOE_Trials('all_channels.events');
+end

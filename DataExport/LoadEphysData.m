@@ -1,36 +1,30 @@
-function [rec,data,spikes,TTLs] = LoadEphysData(fname,dname)
-currDir=cd;
-cd(dname);
-spikes=struct('clusters',[],'electrodes',[],'spikeTimes',[],'waveForms',[],'metadata',[]);
-try
-wb = waitbar( 0, 'Reading Data File...' );
-    rec.dirName=dname;
-    rec.fileName=fname;
-    disp(['loading ' dname filesep fname]);
-    if contains(fname,'.ns') %% Blackrock raw data
-        [data,rec,spikes]=LoadEphys_Blackrock(fname);
-    elseif contains(fname,{'.bin','dat'}) %% Binary file (e.g., from Intan)
-        [data,rec,spikes]=LoadEphys_Binary(dname,fname);
-    elseif contains(fname,{'raw.kwd','kwik'}) %% Kwik format
-        [data,rec]=LoadEphys_Kwik(dname,fname);
-    elseif contains(fname,'continuous') %% Open Ephys old format
-        [data,rec,spikes]=LoadEphys_Continuous(dname,fname);
-    elseif contains(fname,'nex') %% TBSI format
-        [data,rec]=LoadEphys_TBSI(dname);
-    end
+function [rec,data,spikes,TTLs] = LoadEphysData(fName,dName)
+currDir=cd; cd(dName);
 
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% get TTL times and structure    
-    waitbar( 0.5, wb, 'getting TTL times and structure');
-    try
-        TTLs = LoadTTL(fname);
-    catch
-        TTLs = [];
+try
+    disp(['loading ' fullfile(dName,fName)]);
+    
+    if contains(fName,'.ns') %% Blackrock raw data
+        [data,rec,spikes,TTLs]=LoadEphys_Blackrock(dName,fName);
+    elseif contains(fName,{'.bin','dat'}) %% Binary file (e.g., from Intan)
+        [data,rec,spikes,TTLs]=LoadEphys_Binary(dName,fName);
+    elseif contains(fName,{'raw.kwd','kwik'}) %% Kwik format
+        [data,rec,TTLs]=LoadEphys_Kwik(dName,fName);
+    elseif contains(fName,'continuous') %% Open Ephys old format
+        [data,rec,spikes,TTLs]=LoadEphys_Continuous(dName,fName);
+    elseif contains(fName,'nex') %% TBSI format
+        [data,rec,TTLs]=LoadEphys_TBSI(dName,fName);
+    elseif contains(fName,'.mat') %trials only
+        [rec,data,spikes]=deal([]);
+        TTLs=LoadEphys_Trials(fName);
+    elseif contains(fName,'.npy') %trials only
+        [rec,data,spikes]=deal([]);
+        TTLs=LoadEphys_NPY(dName);
     end
+    
 catch
-    %close(wb);
     disp('Failed loading ephys data');
 end
-cd(currDir);
 close(wb);
+cd(currDir); 
 end

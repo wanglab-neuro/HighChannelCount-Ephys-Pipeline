@@ -1,5 +1,11 @@
-function [data,rec,spikes]=LoadEphys_Binary(dname,fname)
-if contains(fname,'.bin') 
+function [data,rec,spikes,TTLs]=LoadEphys_Binary(dName,fName)
+wb = waitbar( 0, 'Reading Data File...' );
+
+spikes=struct('clusters',[],'electrodes',[],'spikeTimes',[],'waveForms',[],'metadata',[]);
+rec.dirName=dName;
+rec.fileName=fName;
+
+if contains(fName,'.bin')
     %% Binary file (e.g., from Intan)
     prompt = {'Enter number of recorded channels:'};
     title = 'Channel list';
@@ -7,7 +13,7 @@ if contains(fname,'.bin')
     definput = {'1'};
     rec.numRecChan = str2double(cell2mat(inputdlg(prompt,title,dims,definput)));
     %             rec.numRecChan=1:32; % need to ask user
-    traces = memmapfile(fullfile(dname,fname),'Format','int16');
+    traces = memmapfile(fullfile(dName,fName),'Format','int16');
     data=traces.Data;
     if ~logical(mod(length(data),8)) % 8 analog channels
         rec.dur=int32(length(data)/8);
@@ -21,20 +27,29 @@ if contains(fname,'.bin')
         disp('unexpected number of samples. Abort')
         return
     end
-    if strcmp(fname,'v.bin') && exist(fullfile(dname,'ts.bin'),'file')
+    if strcmp(fName,'v.bin') && exist(fullfile(dName,'ts.bin'),'file')
         rec.sys='Intan';
         % load timestamps
-        sampleTimes=memmapfile(fullfile(dname,'ts.bin'),'Format','int64');
+        sampleTimes=memmapfile(fullfile(dName,'ts.bin'),'Format','int64');
         rec.timeStamps=sampleTimes.Data;
         rec.recordingStartTime=rec.timeStamps(1);
         rec.samplingRate=30000; % SampleRateString="30.0 kS/s" Duh
         rec.bitResolution=0.195;
-        FileInfo = dir(fname);
+        FileInfo = dir(fName);
         rec.data = FileInfo.date;
     end
     spikes=[];
+    
+    %%% TTLs
+    waitbar( 0.5, wb, 'getting TTL times and structure');
+    TTLs = memmapfile(fullfile(cd,'ttl.bin'),'Offset',14,'Format','int8');
+    TTLs = TTLs.Data(TTLs.Data~=0);
+    figure; plot((TTLs(1:300000)))
+    figure; plot(diff(TTLs(1:300000)))
+    sum(diff(TTLs)==1)
+    
 else
-    %% dat format binary file (e.g., exported data or Open Ephys binary)  
+    %% dat format binary file (e.g., exported data or Open Ephys binary)
     % need to know how many channels
     try
         rec = readOpenEphysXMLSettings(['..' filesep '..' filesep ...
@@ -65,7 +80,7 @@ else
         rec.bitResolution=0.195; %assuming Intan / OpenEphys
         rec.sys='';
     end
-    traces = memmapfile(fullfile(dname,fname),'Format','int16');
+    traces = memmapfile(fullfile(dName,fName),'Format','int16');
     data=traces.Data;
     if ~logical(mod(length(data),numel(rec.numRecChan)))
         rec.dur=int32(length(data)/(numel(rec.numRecChan)));
@@ -106,4 +121,7 @@ else
             spikeFiles{1, 1}(metadataFIdx).name));
     catch
     end
+    
+    %%%% TTLs ??
+    TTLs=struct('start',[],'end',[],'interval',[],'sampleRate',[],'continuous',[]);
 end
