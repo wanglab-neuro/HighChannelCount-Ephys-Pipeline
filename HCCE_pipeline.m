@@ -1,14 +1,15 @@
-function HCCE_pipeline(exportNotes, exportData, spikeSort)
-% Runs the blackrock pipline with analysis options of your choice.
-%   exportNotes: boolean 
+function HCCE_pipeline(dataDir, exportNotes, exportData, spikeSort)
+% Runs the high channel count ephys pipeline with analysis options of your choice.
+%   exportNotes: boolean
 %   exportData: boolean
 %   spikeSort: boolean
-dataDir = cd;
-[filepath,folderName] = fileparts(dataDir);
 
+if narging == 0, dataDir = cd; end
+if nargin < 2; exportNotes=false; end
+if nargin < 3; exportData=true; end
+if nargin < 4; spikeSort=true; end
 
 %% Export notes
-%exportNotes = 0;
 if exportNotes
     % list directories above, assuming the parent folder is the container for
     % all files from that subject
@@ -18,16 +19,22 @@ if exportNotes
 end
 
 %% Export .dat files with BatchExport
-%exportData = 0;
 if exportData
     % start from data session's root directory
+    cd(dataDir);
     [dataFiles,allRecInfo]=BatchExport;
     save('fileInfo','dataFiles','allRecInfo');
 end
 
-%spikeSort = 1;
+%% Sort spikes
 if spikeSort
-    BatchSpikeSort_KS_JRC(dataDir,folderName,allRecInfo)
+    [~,folderName] = fileparts(dataDir);
+    switch spikeSort
+        case {true, 'KS'}
+            BatchSpikeSort_KS_JRC(dataDir,folderName,allRecInfo)
+        otherwise
+            % may use other sorters, or compare results with SpikeInterface
+    end
 end
 
 
