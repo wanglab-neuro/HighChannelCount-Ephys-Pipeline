@@ -4,7 +4,7 @@ function HCCE_pipeline(dataDir, exportNotes, exportData, spikeSort)
 %   exportData: boolean
 %   spikeSort: boolean
 
-if narging == 0, dataDir = cd; end
+if nargin == 0, dataDir = cd; end
 if nargin < 2; exportNotes=false; end
 if nargin < 3; exportData=true; end
 if nargin < 4; spikeSort=true; end

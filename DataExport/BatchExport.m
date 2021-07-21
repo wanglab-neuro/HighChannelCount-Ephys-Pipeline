@@ -130,6 +130,7 @@ for fileNum=1:size(dataFiles,1)
         end
     end
     vSyncTTLDir=cd;
+    
     %% get recording name
     % (in case they're called 'continuous' or some bland thing like this)
     % basically, Open Ephys
@@ -157,6 +158,7 @@ for fileNum=1:size(dataFiles,1)
     recInfo.subject=recNameComp{1};
     recInfo.shortDate=recNameComp{2};
     recInfo.probeDepth=recNameComp{3};
+    
     %% get video sync TLLs
     if ~exist('videoTTL','var') && isempty(videoTTL)
         try % this should already be performed by LoadTTL, called from LoadEphysData above
@@ -210,6 +212,7 @@ for fileNum=1:size(dataFiles,1)
             end
         end
     end
+    
     %% check that recordingName doesn't have special characters
     recordingName=regexprep(recordingName,'\W','');
     allRecInfo{fileNum}.recordingName=recordingName;
@@ -254,8 +257,7 @@ for fileNum=1:size(dataFiles,1)
         recInfo.export.spikesFile=[recordingName '_spikes.mat'];
     end
     
-    
-    %% save photostim TTLs in second resolution
+    %% save photostim TTLs 
     if exist('laserTTL','var') && ~isempty(laserTTL) && ~isempty(laserTTL(1).start)
         % discard native sr timestamps and convert to seconds if needed
         if any([laserTTL.samplingRate]==1)
@@ -282,7 +284,7 @@ for fileNum=1:size(dataFiles,1)
         recInfo.export.TTLs={[recordingName '_TTLs.dat'];[recordingName '_trial.csv']}; %[recordingName '_export_trial.mat']};
     end
     
-    %% save video sync TTL data, in ms resolution
+    %% save video sync TTL data
     if exist('videoTTL','var') || (exist('frameCaptureTime','var') && ~isempty(frameCaptureTime))
         fileID = fopen([recordingName '_vSyncTTLs.dat'],'w');
         if exist('videoTTL','var') && isfield(videoTTL,'start') && ~isempty(videoTTL(1).start)
@@ -339,7 +341,6 @@ for fileNum=1:size(dataFiles,1)
         recInfo.export.actuators_TS={[recordingName '_actuators_TS.dat'];...
             [recordingName '_actuators_TS.csv']}; %[recordingName '_export_trial.mat']};
     end
-    
     
     %% try to find likely companion video file
     if ~isempty(videoFiles)
