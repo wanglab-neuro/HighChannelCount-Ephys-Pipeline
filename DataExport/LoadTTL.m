@@ -68,33 +68,36 @@ elseif contains(fName,'.ns') || contains(fName,'.nev')
     digInEvents=NEVdata.Data.SerialDigitalIO.UnparsedData;
     digInTimes=double(NEVdata.Data.SerialDigitalIO.TimeStamp); %TimeStampSec i interval in ms?
     
+    %% find TTL detection type: rising only, or rising + falling
+    if mode(diff(digInTimes))> sampleRate/1000 % TTL timestamp > 1ms
+        TTLtype = 'rise';
+    else
+        TTLtype = 'rise&fall'; %this is a default assumption. If output gives half expected TTL number, correct that here
+    end
+    
     % Given 2 inputs in Port 0 and 1
     % No input              => bin2dec('00') = 0
     % input on Port 0 only  => bin2dec('10') = 2
     % input on Port 1 only  => bin2dec('01') = 1
     % input on both ports   => bin2dec('11') = 3
     
-    TTL_ID=logical(dec2bin(digInEvents)-'0');      
+    TTL_ID=logical(dec2bin(digInEvents)-'0');
     if ~isempty(TTL_ID)
         clear TTLs;
         for TTLChan=size(TTL_ID,2):-1:1
             TTLIdx=find(TTL_ID(:,TTLChan));
             if ~isempty(TTLIdx)
-                TTLdur= change that so that's it's max a reasonable duration (e.g., 1ms) mode(diff(digInTimes(TTLIdx)))/2; % assuming 50% cycle - this is only to have an estimate for camera TTLs - not laser or trials
-                
-                %             TTLIdx=bwconncomp(TTL_ID(:,TTLChan));
-                %             if ~isempty(TTLIdx)
-                %                 if TTLIdx.NumObjects==1 %e.g., when only camera sync TTL, no laser pulses
-                %
-                %                     TTLIdx=vertcat(TTLIdx.PixelIdxList{:});
-                %                 else
-                %                     TTLdur=mode(cellfun(@(pulse) digInTimes(pulse(end))-digInTimes(pulse(1))+1,...
-                %                         TTLIdx.PixelIdxList));
-                %                     TTLIdx=cellfun(@(pulse) pulse(1), TTLIdx.PixelIdxList);
-                %                 end
-                
-                find(diff(digInTimes(TTLIdx))<TTLdur)
-                
+                switch TTLtype
+                    case 'rise'
+                        %then need to define TTL duration
+                        TTLdur= mode(diff(digInTimes(TTLIdx)))/2; % assuming 50% cycle - this is only to have an estimate for camera TTLs - not laser or trials
+                        TTLdur= min([TTLdur sampleRate/1000]); % set upper boundary to a reasonable duration (1ms)
+                        % remove TTLs instance shorter than that duration
+                        TTLIdx=TTLIdx(~ismember(TTLIdx, find(diff(digInTimes(TTLIdx))<TTLdur)+1));
+                    case 'rise&fall'
+                        TTLdur= mode(diff(digInTimes(TTLIdx)));
+                        TTLIdx = TTLIdx(1:2:end);
+                end
                 try
                     TTLs{size(TTL_ID,2)-TTLChan+1}=...
                         struct('TTLtimes',digInTimes(TTLIdx)/sampleRate,...
