@@ -9,3 +9,5 @@ try
 catch
     TTLs=[];
 end
+
+close(wb);

@@ -33,6 +33,7 @@ allRecInfo=cell(size(dataFiles,1),1);
 %% find / ask for probe file when exporting and copy to export folder
 probeFile = cellfun(@(fileFormat) dir(fullfile(rootDir,'SpikeSorting', fileFormat)),...
     {'*.json'},'UniformOutput', false);
+isRecSession=true; 
 if ~isempty(probeFile{:})
     probeFileName=probeFile{1, 1}.name;
     probePathName=probeFile{1, 1}.folder;
@@ -48,6 +49,7 @@ else
         %get session notes
         notesFile=fullfile(parentList(notesIdx).folder,parentList(notesIdx).name);
         notes=jsondecode(fileread(notesFile));
+        if isfield(notes,'Sessions')
         % get probe info
         sessionIdx=contains({notes.Sessions.baseName}, sessionsFolder);
         probe=notes.Sessions(find(sessionIdx,1)).probe;
@@ -63,12 +65,17 @@ else
         adapter=strrep(adapter,' ','');
         % combine
         probeFileName=[probeType '_' adapter '.json'];
+        else
+            isRecSession=false; %just training
+        end
     else
         %or ask
         [probeFileName,probePathName] = uigetfile('*.json',['Select the .json probe file for '...
             sessionsFolder],probePathName);
     end
-    copyfile(fullfile(probePathName,probeFileName),fullfile(cd,'SpikeSorting',probeFileName));
+    if isRecSession
+        copyfile(fullfile(probePathName,probeFileName),fullfile(cd,'SpikeSorting',probeFileName));
+    end
 end
 
 %% export each file
@@ -411,8 +418,12 @@ for fileNum=1:size(dataFiles,1)
     if any(exist(notesFile,'file'))
         notes=jsondecode(fileread(notesFile));
         % get info about that session
-        sessionIdx=strcmp({notes.Sessions.baseName}, recInfo.baseName);
-        session=notes.Sessions(sessionIdx);
+        if isfield(notes,'Sessions')
+            sessionIdx=strcmp({notes.Sessions.baseName}, recInfo.baseName);
+            session=notes.Sessions(sessionIdx);
+        else
+            session=[];
+        end
         % allocate data
         if ~isempty(session)
             ephys=session; ephys=rmfield(ephys,{'baseName','date','stimPower',...

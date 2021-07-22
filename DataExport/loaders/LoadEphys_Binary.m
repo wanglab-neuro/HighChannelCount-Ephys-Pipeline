@@ -125,3 +125,5 @@ else
     %%%% TTLs ??
     TTLs=struct('start',[],'end',[],'interval',[],'sampleRate',[],'continuous',[]);
 end
+
+close(wb);

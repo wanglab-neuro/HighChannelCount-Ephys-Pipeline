@@ -10,10 +10,12 @@ if nargin < 2; exportNotes=false; end
 if nargin < 3; exportData=true; end
 if nargin < 4; spikeSort=true; end
 
+[filepath,folderName] = fileparts(dataDir);
+    
 %% Export notes
 if exportNotes
     % list directories above, assuming the parent folder is the container for
-    % all files from that subject
+    % all files and data for that subject. 
     parentDir=regexp(dataDir,['(?<=\' filesep ').+?(?=\' filesep ')'],'match');
     parentDir = parentDir{end};
     ExportXPNotes(['Experiment Note Sheet - ' parentDir '.xlsx'] , filepath)
@@ -29,7 +31,6 @@ end
 
 %% Sort spikes
 if spikeSort
-    [~,folderName] = fileparts(dataDir);
     switch spikeSort
         case {true, 'KS'}
             BatchSpikeSort_KS_JRC(dataDir,folderName,allRecInfo)

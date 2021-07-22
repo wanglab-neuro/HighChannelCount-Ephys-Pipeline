@@ -105,9 +105,11 @@ if ~isempty(TTL_ID)
                     % remove TTLs instance shorter than that duration
                     TTLIdx=TTLIdx(~ismember(TTLIdx, find(diff(digInTimes(TTLIdx))<TTLdur)+1));
                 case 'rise&fall'
-                    TTLdur= mode(diff(digInTimes(TTLIdx)));
-                    TTLIdx = TTLIdx(1:2:end);
-            end
+                    TTLdur= mode(diff(digInTimes([TTLIdx; find([0; diff(TTL_ID(:,TTLChan))])])));
+                    if TTLIdx(end)==numel(digInEvents)
+                        TTLIdx=TTLIdx(1:end-1); %spurious event
+                    end
+                end
             try
                 TTLs{size(TTL_ID,2)-TTLChan+1}=...
                     struct('TTLtimes',digInTimes(TTLIdx)/sampleRate,...
@@ -179,3 +181,4 @@ else % check analog channels in NS file
     end
 end
 
+close(wb);

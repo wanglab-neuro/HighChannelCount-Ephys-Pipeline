@@ -25,6 +25,5 @@ try
 catch
     disp('Failed loading ephys data');
 end
-close(wb);
 cd(currDir); 
 end

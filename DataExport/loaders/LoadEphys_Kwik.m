@@ -83,3 +83,5 @@ else
     disp('Check out OE_proc_disp instead');
     return
 end
+
+close(wb);

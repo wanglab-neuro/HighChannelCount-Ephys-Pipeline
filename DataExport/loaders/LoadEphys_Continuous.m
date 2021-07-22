@@ -32,3 +32,5 @@ catch
     % May be the old format
     TTLs=getOE_Trials('all_channels.events');
 end
+
+close(wb);
