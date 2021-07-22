@@ -1,5 +1,6 @@
 function HCCE_pipeline(dataDir, exportNotes, exportData, spikeSort)
 % Runs the high channel count ephys pipeline with analysis options of your choice.
+%   dataDir: the directory where the data are 
 %   exportNotes: boolean
 %   exportData: boolean
 %   spikeSort: boolean
@@ -18,7 +19,7 @@ if exportNotes
     ExportXPNotes(['Experiment Note Sheet - ' parentDir '.xlsx'] , filepath)
 end
 
-%% Export .dat files with BatchExport
+%% Export files with BatchExport
 if exportData
     % start from data session's root directory
     cd(dataDir);
