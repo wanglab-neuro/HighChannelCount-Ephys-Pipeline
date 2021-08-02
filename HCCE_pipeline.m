@@ -9,6 +9,7 @@ if nargin == 0, dataDir = cd; end
 if nargin < 2; exportNotes=false; end
 if nargin < 3; exportData=true; end
 if nargin < 4; spikeSort=true; end
+if nargin < 5; curateSort=false; end
 
 [filepath,folderName] = fileparts(dataDir);
     
@@ -33,11 +34,18 @@ end
 if spikeSort
     switch spikeSort
         case {true, 'KS'}
-            BatchSpikeSort_KS_JRC(dataDir,folderName,allRecInfo)
+            BatchSpikeSort_KS(dataDir,folderName);
         otherwise
             % may use other sorters, or compare results with SpikeInterface
     end
 end
 
+if curateSort
+    switch curateSort
+        case {true, 'JRC'}
+            ImportKStoJRC(dataDir);
+        otherwise
+    end
+end
 
 end
