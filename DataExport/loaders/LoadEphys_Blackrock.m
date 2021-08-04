@@ -67,18 +67,19 @@ rec.sys='Blackrock';
 %% get TTL times and structure
 
 waitbar( 0.5, wb, 'getting TTL times and structure');
-TTLs=struct('start',[],'end',[],'interval',[],'sampleRate',[],'continuous',[]);
+TTLs=struct('channelType',[],'timeBase',[],'start',[],'end',[],'interval',[],...
+    'TTLtimes',[],'samplingRate',[],'continuous',[]);
 
 %% check NEV file first, even if NS file is in argument
 % NEV files contain records of digital pin events, where TTL should be
 % eventData=openNEV([fName(1:end-3), 'nev']);
 
-sampleRate=double(eventData.MetaTags.SampleRes);
+samplingRate=double(eventData.MetaTags.SampleRes);
 digInEvents=eventData.Data.SerialDigitalIO.UnparsedData;
 digInTimes=double(eventData.Data.SerialDigitalIO.TimeStamp); %TimeStampSec i interval in ms?
 
 %% find TTL detection type: rising only, or rising + falling
-if mode(diff(digInTimes))> sampleRate/1000 % TTL timestamp > 1ms
+if mode(diff(digInTimes))> samplingRate/1000 % TTL timestamp > 1ms
     TTLtype = 'rise';
 else
     TTLtype = 'rise&fall'; %this is a default assumption. If output gives half expected TTL number, correct that here
@@ -93,7 +94,8 @@ end
 
 TTL_ID=logical(dec2bin(digInEvents)-'0');
 if ~isempty(TTL_ID)
-    clear TTLs;
+    TTLs=rmfield(TTLs,'continuous');%     clear TTLs;
+    channelIDs=strsplit(deblank(eventData.IOLabels{1, 2}),'_');
     for TTLChan=size(TTL_ID,2):-1:1
         TTLIdx=find(TTL_ID(:,TTLChan));
         if ~isempty(TTLIdx)
@@ -101,7 +103,7 @@ if ~isempty(TTL_ID)
                 case 'rise'
                     %then need to define TTL duration
                     TTLdur= mode(diff(digInTimes(TTLIdx)))/2; % assuming 50% cycle - this is only to have an estimate for camera TTLs - not laser or trials
-                    TTLdur= min([TTLdur sampleRate/1000]); % set upper boundary to a reasonable duration (1ms)
+                    TTLdur= min([TTLdur samplingRate/1000]); % set upper boundary to a reasonable duration (1ms)
                     % remove TTLs instance shorter than that duration
                     TTLIdx=TTLIdx(~ismember(TTLIdx, find(diff(digInTimes(TTLIdx))<TTLdur)+1));
                 case 'rise&fall'
@@ -109,13 +111,22 @@ if ~isempty(TTL_ID)
                     if TTLIdx(end)==numel(digInEvents)
                         TTLIdx=TTLIdx(1:end-1); %spurious event
                     end
-                end
+            end
             try
-                TTLs{size(TTL_ID,2)-TTLChan+1}=...
-                    struct('TTLtimes',digInTimes(TTLIdx)/sampleRate,...
-                    'samplingRate',1,...
-                    'start',digInTimes(TTLIdx)'/sampleRate,...
-                    'end',digInTimes(TTLIdx)'/sampleRate + (TTLdur/sampleRate));
+                chNum=size(TTL_ID,2)-TTLChan+1;
+                TTLs(chNum).channelType=channelIDs{chNum};
+                TTLs(chNum).start=digInTimes(TTLIdx)'/samplingRate;
+                TTLs(chNum).end=digInTimes(TTLIdx)'/samplingRate + (TTLdur/samplingRate);
+                TTLs(chNum).interval=mode(diff(TTLs(chNum).start));
+                TTLs(chNum).timeBase='s';
+                TTLs(chNum).samplingRate=samplingRate;                
+                TTLs(chNum).TTLtimes=digInTimes(TTLIdx);
+
+%                 TTLs{size(TTL_ID,2)-TTLChan+1}=...
+%                     struct('TTLtimes',digInTimes(TTLIdx)/sampleRate,...
+%                     'samplingRate',1,...
+%                     'start',digInTimes(TTLIdx)'/sampleRate,...
+%                     'end',digInTimes(TTLIdx)'/sampleRate + (TTLdur/sampleRate));
                 %ConvTTLtoTrials(digInTimes(TTLIdx),TTLdur,sampleRate);
             catch
                 continue;
@@ -131,7 +142,7 @@ elseif contains(fName,'.nev')
         [eventData.ElectrodesInfo.DigitalFactor]>1000 & [eventData.ElectrodesInfo.HighThreshold]>0;
     if sum(TTLChannel)==0 %then assume TTL was AIN 1
         TTLChannel=cellfun(@(x) contains(x','ainp1'),{eventData.ElectrodesInfo.ElectrodeLabel}) & ...
-            [eventData.ElectrodesInfo.DigitalFactor]>1000;
+            [eventData.ElectrodesInfo.DigitalFactor]>1000; %may be a proper label like "Camera"
     end
     
     TTLChannel=eventData.ElectrodesInfo(TTLChannel).ElectrodeID;
@@ -179,6 +190,10 @@ else % check analog channels in NS file
             TTLs=TTLs{1};
         end
     end
+end
+
+if any(cellfun(@isempty,{TTLs.channelType}))
+    TTLs=AssignTTLs(TTLs);
 end
 
 close(wb);

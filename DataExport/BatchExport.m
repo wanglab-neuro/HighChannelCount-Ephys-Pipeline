@@ -83,38 +83,10 @@ for fileNum=1:size(dataFiles,1)
     try
         [recInfo,recordings,spikes,TTLdata] = LoadEphysData(dataFiles(fileNum).name,dataFiles(fileNum).folder);
         
-        switch size(TTLdata,2) %% Convention : 1 - Laser / 2 - Camera 1 / 3 - Session trials
-            case 1
-                if isfield(TTLdata,'TTLChannel')
-                    switch TTLdata.TTLChannel
-                        case 1
-                            laserTTL=TTLdata;
-                            videoTTL=0;
-                        case 2
-                            videoTTL=TTLdata;
-                            clear laserTTL
-                    end
-                else
-                    laserTTL=TTLdata{1}; %might be laser stim or behavior
-                    videoTTL=[];
-                end
-            case 2
-                laserTTL=TTLdata{1}; %used to be behavior trials in older recordings
-                videoTTL=TTLdata{2};
-            case 3 % other TTL (e.g., touch stim)
-                if ~isempty(TTLdata{1}.TTLtimes)
-                    laserTTL=TTLdata{1};
-                else
-                    laserTTL=[];
-                end
-                videoTTL=TTLdata{2};
-                actuatorTTL = TTLdata{3};
-            otherwise
-                if ~iscell(TTLdata)
-                    videoTTL=TTLdata;
-                    clear laserTTL
-                end
-        end
+        videoTTL=TTLdata(strcmp({TTLdata.channelType},'Camera'));
+        trialTTL=TTLdata(strcmp({TTLdata.channelType},'Zaber'));
+        laserTTL=TTLdata(strcmp({TTLdata.channelType},'Laser'));
+
         allRecInfo{fileNum}=recInfo;
     catch
         continue
@@ -291,18 +263,28 @@ for fileNum=1:size(dataFiles,1)
         recInfo.export.TTLs={[recordingName '_TTLs.dat'];[recordingName '_trial.csv']}; %[recordingName '_export_trial.mat']};
     end
     
+    %% or save trial TTLs (to be streamlined)
+    if exist('trialTTL','var') && ~isempty(trialTTL) && ~isempty(trialTTL(1).start)
+        %swap dimensions if necessary
+        if size(trialTTL.start,1)<size(trialTTL.start,2)
+            trialTTL.start=trialTTL.start';
+            trialTTL.end=trialTTL.end';
+        end
+        
+        % save binary file
+        fileID = fopen([recordingName '_TTLs.dat'],'w');
+        fwrite(fileID,[trialTTL.start,trialTTL.end]','single'); %trialTTL.end'
+        fclose(fileID);
+        %save timestamps in seconds units as .csv
+        dlmwrite([recordingName '_export_trial.csv'],[trialTTL.start,trialTTL.end],...
+            'delimiter', ',', 'precision', '%5.4f');
+        recInfo.export.TTLs={[recordingName '_TTLs.dat'];[recordingName '_trial.csv']};
+    end
+    
     %% save video sync TTL data
     if exist('videoTTL','var') || (exist('frameCaptureTime','var') && ~isempty(frameCaptureTime))
         fileID = fopen([recordingName '_vSyncTTLs.dat'],'w');
         if exist('videoTTL','var') && isfield(videoTTL,'start') && ~isempty(videoTTL(1).start)
-            % discard native sr timestamps and convert to seconds if needed
-            if any([videoTTL.samplingRate]==1)
-                videoTTL=videoTTL([videoTTL.samplingRate]==1);
-            else
-                videoTTL=videoTTL([videoTTL.samplingRate]==1000);
-                % convert timebase to seconds
-                videoTTL.start=single(videoTTL.start)/videoTTL.samplingRate;
-            end
             %swap dimensions if necessary
             if size(videoTTL.start,2)>size(videoTTL.start,1); videoTTL.start=videoTTL.start'; end
             
@@ -364,6 +346,17 @@ for fileNum=1:size(dataFiles,1)
     trials = struct('trialNum', [], 'start', [], 'stop', [], 'isphotostim', []);
     if exist('trialTTL','var')
         %
+         for stimN=1:size(trialTTL,2)
+            trials((stimN)*2-1).trialNum=(stimN)*2-2;
+            if stimN ==1; trials((stimN)*2-1).start=0; else;...
+                    trials((stimN)*2-1).start=trialTTL(stimN-1).end(end); end
+            trials((stimN)*2-1).stop=trialTTL(stimN).start(1);
+            trials((stimN)*2-1).isphotostim=false;
+            trials((stimN)*2).trialNum=(stimN)*2-1;
+            trials((stimN)*2).start=trialTTL(stimN).start(1);
+            trials((stimN)*2).stop=trialTTL(stimN).end(end);
+            trials((stimN)*2).isphotostim=false;
+        end
     elseif exist('laserTTL','var') && ~isempty(laserTTL) && ~isempty(laserTTL.TTLtimes)
         % if there's no task but photostims, create no-stim / stim trials:
         for stimN=1:size(laserTTL,2)
