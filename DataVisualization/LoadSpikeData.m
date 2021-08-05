@@ -1,6 +1,5 @@
-function spikes=LoadSpikeData(argin_fName,traces) %electrodes,samplingRate,bitResolution
-% fName='vIRt22_2018_10_16_20_36_04_5600_50ms1Hz10mW_1_1_export.result.hdf5';
-%% from Spike2
+function spikes=LoadSpikeData(argin_fName,traces,sortDir)
+
 if logical(regexp(argin_fName,'Ch\d+.'))
     load(argin_fName)
     spikes.Units{electrodes,1}=nw_401.codes(:,1);
@@ -12,10 +11,10 @@ elseif contains(argin_fName,'.hdf5')
     fName=regexp(argin_fName,'\S+?(?=\.\w+\.\w+$)','match','once');
     postFix='';
     if isempty(fName)
-            fName=regexp(argin_fName,'\S+?(?=\.\w+\-\w+\.\w+$)','match','once'); %in case loading merged files
-            if ~isempty(fName)
-                postFix='-merged';
-            end
+        fName=regexp(argin_fName,'\S+?(?=\.\w+\-\w+\.\w+$)','match','once'); %in case loading merged files
+        if ~isempty(fName)
+            postFix='-merged';
+        end
     end
     % find templates and preferred electrodes
     templateToEl=h5read([fName '.clusters' postFix '.hdf5'],'/electrodes'); % this are the *preferred* electrodes for all K templates
@@ -45,7 +44,7 @@ elseif contains(argin_fName,'.hdf5')
         end
     end
     unitID{templateNum+1}=zeros(size(spikeTimes{templateNum+1},1),1);
-%     numTemplates=size(spikeTimes,1);
+    %     numTemplates=size(spikeTimes,1);
     % concatenate values
     spikes.unitID=uint32(vertcat(unitID{:}));
     spikes.times=vertcat(spikeTimes{:});
@@ -59,7 +58,7 @@ elseif contains(argin_fName,'.hdf5')
     
     % extract spike waveforms by electrode
     %     traces=load(['../' fName '.mat']);
-%     traces = memmapfile(['../' fName '.dat'],'Format','int16');
+    %     traces = memmapfile(['../' fName '.dat'],'Format','int16');
     % gert number of electrodes
     clustersData=h5info([fName '.clusters' postFix '.hdf5']);
     clustersDatasetsNames={clustersData.Datasets.Name};
@@ -67,23 +66,23 @@ elseif contains(argin_fName,'.hdf5')
         clustersDatasetsNames));
     electrodesId=cellfun(@(x) str2double(regexp(x,'(?<=data_)\w+','match','once')),...
         electrodesId);
-%         unique(spikes.preferredElectrode(spikes.unitID==templateNum))
+    %         unique(spikes.preferredElectrode(spikes.unitID==templateNum))
     
     if exist('traces','var')
         spikes.waveforms=NaN(size(spikes.times,1),50);
         for electrodeNum=electrodesId
-%             =templateToEl(templateNum)+1;
+            %             =templateToEl(templateNum)+1;
             if isa(traces,'memmapfile') % reading electrode data from .dat file
                 spikes.waveforms(spikes.preferredElectrode==electrodeNum,:)=...
-                ExtractChunks(traces.Data(electrodeNum+1:numel(electrodesId):max(size(traces.Data))),...
-                    spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'   
-            else              
+                    ExtractChunks(traces.Data(electrodeNum+1:numel(electrodesId):max(size(traces.Data))),...
+                    spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
+            else
                 spikes.waveforms(spikes.preferredElectrode==electrodeNum,:)=...
                     ExtractChunks(traces(electrodeNum+1,:),...
                     spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
             end
             % scale to resolution
-%             spikes.waveforms{elNum,1}=spikes.Waveforms{elNum,1}.*bitResolution;
+            %             spikes.waveforms{elNum,1}=spikes.Waveforms{elNum,1}.*bitResolution;
         end
     else
         spikes.waveforms=[];
@@ -109,244 +108,227 @@ elseif contains(argin_fName,'.hdf5')
     
     % Compute ISI
     % isis = diff(spikeTimes{templateNum,1}); hold on
-%     isis = double(diff(spikes.spikeTimes(spikes.unitID==templateNum)));
-%     hist(isis)
+    %     isis = double(diff(spikes.spikeTimes(spikes.unitID==templateNum)));
+    %     hist(isis)
     
     % Display the amplitude
-%     figure
+    %     figure
     % plot(spikeTimes{templateNum,1}, spikeAmplitudes{templateNum,1}, '.')
-%     plot(spikes.spikeTimes(spikes.unitID==templateNum),spikes.amplitude(spikes.unitID==templateNum), '.')
-elseif contains(argin_fName,'rez.mat') || contains(argin_fName,'_KS') %Kilosort
-        load(argin_fName);
-    %        
-        spikes.times=uint64(rez.st3(:,1));
-        spikes.unitID=uint32(rez.st3(:,2));
-        spikes.waveforms=[];
-        spikes.samplingRate=30000; 
-        unitIDs=unique(spikes.unitID);
-        templates=abs(rez.Wraw);
-        templateToEl=zeros(numel(unitIDs),1);
-        for templNum=1:numel(unitIDs)
-            thatTemplate=squeeze(templates(:,:,unitIDs(templNum)));
-            [elecRow,~] = ind2sub(size(thatTemplate),find(thatTemplate==max(max(thatTemplate))));
-            if size(elecRow,1)>1
-                if length(unique(elecRow))>1 %weird
-                    %                     then look for next biggest value?
-                    return
-                else
-                    elecRow=unique(elecRow);
-                end
-            end
-            templateToEl(templNum)=elecRow;
-        end
-        spikes.preferredElectrode=nan(numel(spikes.times),1);
-        for unitNum=1:numel(unitIDs)
-            spikes.preferredElectrode(unitIDs(unitNum)==spikes.unitID)=templateToEl(unitNum)
-        end      
-        
-        [spikes.times,timeIdx]=sort(spikes.times);
-        spikes.unitID=spikes.unitID(timeIdx);
-        spikes.preferredElectrode=spikes.preferredElectrode(timeIdx);
-%         spikes.waveforms=spikes.waveforms(timeIdx,:);       
-
-%         for elNum=1:electrodes
-%             try
-%                 %Results, after fitting templates
-%                 thisElTemplates=find(templateToEl==elNum);
-%                 units=false(size(spikeTemplates,1),1);
-%                 for templt=1:size(thisElTemplates,1)
-%                     units=units | spikeTemplates==thisElTemplates(templt);
+    %     plot(spikes.spikeTimes(spikes.unitID==templateNum),spikes.amplitude(spikes.unitID==templateNum), '.')
+elseif contains(argin_fName,'rez.mat') || contains(argin_fName,'_KS') ||...
+        contains(argin_fName,'spikes.npy') %Kilosort
+    switch argin_fName
+        case 'spike_times.spikes.npy' 
+            phyData = loadPhy(sortDir);
+            spikes.times=phyData.spike_times; %readNPY(argin_fName);
+            spikes.unitID=phyData.spike_clusters+1; %readNPY(fullfile(sortDir,'spike_clusters.npy'));
+%             unitIDs=unique(spikes.unitID);
+%             templates=phyData.templates;
+%             templateToEl=zeros(numel(unitIDs),1);
+%             for templNum=1:numel(unitIDs)
+%                 thatTemplate=squeeze(templates(:,:,unitIDs(templNum)));
+%                 [elecRow,~] = ind2sub(size(thatTemplate),find(thatTemplate==max(max(thatTemplate))));
+%                 if size(elecRow,1)>1
+%                     if length(unique(elecRow))>1 %weird
+%                         %                     then look for next biggest value?
+%                         return
+%                     else
+%                         elecRow=unique(elecRow);
+%                     end
 %                 end
-%                 Spikes.Units{elNum,1}=spikeTemplates(units);
-%                 Spikes.SpikeTimes{elNum,1}=spikeTimes(units);
-%                 % extract spike waveforms  traces = memmapfile('example.dat','Format','int16');
-%                 if isa(traces,'memmapfile') % reading electrode data from .dat file
-%                     Spikes.Waveforms{elNum,1}=ExtractChunks(traces.Data(elNum:electrodes:max(size(traces.Data))),...
-%                         Spikes.SpikeTimes{elNum,1},50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
-%                 else
-%                     Spikes.Waveforms{elNum,1}=ExtractChunks(traces(elNum,:),...
-%                         Spikes.SpikeTimes{elNum,1},50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
-%                 end
-%                 % scale to resolution
-%                 Spikes.Waveforms{elNum,1}=Spikes.Waveforms{elNum,1}.*bitResolution;
-%                 Spikes.samplingRate(elNum,1)=samplingRate;
-%             catch
+%                 templateToEl(templNum)=elecRow;
 %             end
-%         end
-    
-elseif contains(argin_fName,'.csv') || ... 
-        contains(argin_fName,'_jrc') || ... 
-        contains(argin_fName,'_res') %from JRClust%from JRClust
-    %
-    %     %% locate the _jrc file
-        
-%         S0struct=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,'_jrc.mat'),...
-%             {dirListing.name},'UniformOutput',false))).name;
-    
-    %     % dimm_spk Dimensions for spike waveforms (stored in_spkwav.bin file)
-    %     % viTime_spk Spike timing in ADC sample unit
-    %     % cviSpk_site Cell of spike index (for _spk prefix) per site
-    %     % miClu_log
-    %     % P Parameter struct used for automated clustering
-    %     % S_clu Cluster-specific information
-  
-            % from KiloSort spikes.times=readNPY('spike_times.npy');
-      
-            try % JRC v3 and v4:
-                load(argin_fName,'spikeTimes','spikeSites','spikeClusters','filtShape')
-                
-%                 evtWindow = [-0.25, 0.75]; %evtWindowRaw = [-0.5, 1.5]; nSiteDir = 4;
-%                 waveformsFid=fopen('vIRt32_2019_04_24_16_48_53_5185_1_1_export_filt.jrc');
-%                 waveforms=fread(waveformsFid,...
-%                     [sum(abs(evtWindow))*30,nSiteDir,size(spikeClusters,1)],'int16');
-%                 fclose(waveformsFid);
-%                 figure; plot(mean(waveforms(1:4:120,spikeClusters==4)'))
-                spikes.unitID=spikeClusters;
-                spikes.times=spikeTimes;
-                spikes.preferredElectrode=spikeSites; %Site with the peak spike amplitude %cviSpk_site Cell of the spike indices per site
-                spikes.templatesIdx=[];
-                spikes.templates=[];
-                spikes.waveforms=[];                        
-                spikes.bitResolution=[];
-                spikes.samplingRate=[];
-            catch
-                try
-                    % v2 updated structure:
-                    load(argin_fName,'miClu_log','P','S_clu','dimm_spk',...
-                        'viSite_spk','viTime_spk');%'cviSpk_site'
-                    
-                    spikes.unitID=S_clu.viClu;
-                    spikes.times=viTime_spk;
-                    spikes.preferredElectrode=viSite_spk; %Site with the peak spike amplitude %cviSpk_site Cell of the spike indices per site
-                    spikes.templatesIdx=S_clu.viSite_clu;
-                    spikes.templates=S_clu.tmrWav_spk_clu;
-                    spikes.waveforms=[];
-                    spikes.bitResolution=P.uV_per_bit;
-                    spikes.samplingRate=P.sRateHz;
-                    
-                catch
-                    % old structure
-                    load(argin_fName,'S_clu','spikeTimes','spikeSites','P');
-                    
-                    spikes.unitID=S_clu.spikeClusters;
-                    spikes.times=spikeTimes;
-                    spikes.preferredElectrode=spikeSites;
-%                     spikes.templatesIdx=S_clu.clusterTemplates;
-%                     spikes.templates=S_clu.spikeTemplates;
-                    spikes.waveforms=S_clu.tmrWav_spk_clu; %mean waveform
-                    spikes.bitResolution=P.uV_per_bit;
-                    spikes.samplingRate=P.sampleRateHz;
-                    
-                    % get filtered waveforms
-                    dirListing=dir;
-                    spikeWaveFormsFile=cellfun(@(x) strfind(x,'_spkwav'),...
-                        {dirListing.name},'UniformOutput',false);
-                    if ~isempty(vertcat(spikeWaveFormsFile{:}))
-                        vcFile=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,'_spkwav'),...
-                            {dirListing.name},'UniformOutput',false))).name;
-                        vcDataType = 'int16';
-                        fid=fopen(vcFile, 'r');
-                        % mnWav = fread_workingresize(fid, dimm, vcDataType);
-                        mnWav = fread(fid, prod(dimm_spk), ['*', vcDataType]); %(nSamples_spk x nSites_spk x nSpikes: int16)
-                        if numel(mnWav) == prod(dimm_spk)
-                            mnWav = reshape(mnWav, dimm_spk);
-                        else
-                            dimm2 = floor(numel(mnWav) / dimm_spk(1));
-                            if dimm2 >= 1
-                                mnWav = reshape(mnWav, dimm_spk(1), dimm2);
-                            else
-                                mnWav = [];
-                            end
-                        end
-                        spikes.waveforms=mnWav;
-                        spikes.waveforms=permute(spikes.waveforms,[3 1 2]);
-                        spikes.waveforms=squeeze(spikes.waveforms(:,:,1)); %keep best waveform only
-                        if ~isempty(vcFile), fclose(fid); end
-                    end
-                end
-            end
-            %% extract spike waveform 
-            % see ...\JRCLUST\@JRC\loadFiles.m > binData = readBin(filename, binShape, dataType)
-            
-%             The "best" site for a spike is always the top row, but not
-%             all spikes for a given unit can be assumed to have the same "best" site.
-%             For a given spike you can find its best or center site in spikeSites.
-%             Then you can get the list of however many neighboring sites were
-%             considered from hCfg.siteNeighbors, like:
-%             hCfg = jrclust.Config('/path/to/your/params.prm');
-%             hCfg.siteNeighbors
-%             That will give you an nNeighbors x nSites matrix, so if you want
-%             the neighbors for the ith site, take the ith column of that matrix.
-%             Then what you could do is embed all your spikes in a matrix that
-%             spans all the neighbors of all the spikes in your unit, and for 
-%             those spikes who don't have traces in those sites, simply put nans.
-%             Then do a nanmean on that matrix.
-                      
-%             filtWFfile=[regexp(argin_fName,'\w+(?=_res)','match','once') '_filt.jrc'];
-%             if exist('filtShape','var') & exist(fullfile(cd,filtWFfile),'file') 
-% %                 recInfofile=[regexp(argin_fName,'\w+(?=export_res)','match','once') 'recInfo.mat'];
-% %                 if exist(fullfile(cd,recInfofile),'file')
-% %                     load(recInfofile);
-% %                     exportDirListing=dir(recInfo.export.directory);
-% %                     paramFileIdx=cellfun(@(fName) contains(fName,'prm'),...
-% %                         {exportDirListing.name});
-% %                     hCfg = jrclust.Config(fullfile(exportDirListing(paramFileIdx).folder,...
-% %                         exportDirListing(paramFileIdx).name));
-% %                     siteNeighbors=hCfg.siteNeighbors;
-% %                 else
-% %                     % calculate it
-% %                     % siteNeighbors = findSiteNeighbors(siteLoc, 2*nSiteDir + 1, ignoreSites, shankMap);
-% %                 end
-%                 fid = fopen(filtWFfile, 'r');
-%                 spikes.waveforms= reshape(fread(fid, inf, '*int16'), filtShape);
-% %                 spikes.waveforms= fread(fid, inf, '*int16');
-%                 fclose(fid);
-%                 spikes.waveforms = permute(spikes.waveforms,[3 1 2]);
-% %                 unitIDs=unique(spikes.unitID);
-% %                 for unitNum=1:numel(unitIDs)
-% %                     %which sites does it occur on? 
-% %                     unique(spikes.preferredElectrode(spikes.unitID==unitIDs(unitNum)))
-% %                 end
-% %                 spikesEmbedding=nan(filtShape(3), size(siteNeighbors,2));
-%                                 
-%             else
-                if (isempty(spikes.waveforms) || size(spikes.waveforms,1) <  size(spikes.unitID,1))...
-                    && exist('traces','var')
-                spikes.waveforms=NaN(size(spikes.times,1),50);
-                electrodesId=unique(spikes.preferredElectrode);
-                for electrodeNum=1:numel(electrodesId)
-                    if isa(traces,'memmapfile') % reading electrode data from .dat file
-                        spikes.waveforms(spikes.preferredElectrode==electrodeNum,:)=...
-                            ExtractChunks(traces.Data(electrodeNum:numel(electrodesId):max(size(traces.Data))),...
-                            spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
+%             spikes.preferredElectrode=nan(numel(spikes.times),1);
+        otherwise
+            load(argin_fName);
+            spikes.times=uint64(rez.st3(:,1));
+            spikes.unitID=uint32(rez.st3(:,2));
+            unitIDs=unique(spikes.unitID);
+            templates=abs(rez.Wraw);
+            templateToEl=zeros(numel(unitIDs),1);
+            for templNum=1:numel(unitIDs)
+                thatTemplate=squeeze(templates(:,:,unitIDs(templNum)));
+                [elecRow,~] = ind2sub(size(thatTemplate),find(thatTemplate==max(max(thatTemplate))));
+                if size(elecRow,1)>1
+                    if length(unique(elecRow))>1 %weird
+                        %                     then look for next biggest value?
+                        return
                     else
-                        spikes.waveforms(spikes.preferredElectrode==electrodeNum,:)=...
-                            ExtractChunks(traces(electrodeNum,:),...
-                            spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
+                        elecRow=unique(elecRow);
                     end
-                    % scale to resolution
-                    %             spikes.waveforms{elNum,1}=spikes.Waveforms{elNum,1}.*bitResolution;
                 end
+                templateToEl(templNum)=elecRow;
             end
-% figure; hold on
-% plot(mean(spikes.waveforms(spikeClusters==46,12:40))/bitResolution); % bitResolution=0.25;
-% plot(mean(waveforms(spikeClusters==46,:,1)))
-% refCh=mode(spikes.preferredElectrode(spikeClusters==4));
-% spikeTimes=spikes.times(spikeClusters==4);
-% spikeSites=spikes.preferredElectrode(spikeClusters==4);
-% unitWF=waveforms(spikeClusters==4,:,:);
-% unitWF_t=spikes.waveforms(spikeClusters==4,:);
-% figure; hold on;
-% for chNum=1:16
-%     plot(traces(chNum,1:6000)+(chNum-1)*max(max(traces(:,1:6000)))*2,'k')
-% end
-% for spikeNum=1:15
-%     for spkchNum=1:9
-%         plot(spikeTimes(spikeNum)-10:spikeTimes(spikeNum)+21,unitWF(spikeNum,:,spkchNum)+int16((refCh-1)*max(max(traces(:,1:6000)))*2))
-%     end
-% %     plot(spikeTimes(spikeNum)-10:spikeTimes(spikeNum)+21,unitWF_t(spikeNum,:)+double((refCh-1)*max(max(traces(:,1:6000)))*2),'b')
-% end
- %
+            spikes.preferredElectrode=nan(numel(spikes.times),1);
+            for unitNum=1:numel(unitIDs)
+                spikes.preferredElectrode(unitIDs(unitNum)==spikes.unitID)=templateToEl(unitNum);
+            end
+    end
+    spikes.waveforms=[];
+    spikes.samplingRate=30000;
+    [spikes.times,timeIdx]=sort(spikes.times);
+    spikes.unitID=spikes.unitID(timeIdx);
+    spikes.preferredElectrode=spikes.preferredElectrode(timeIdx);
+
+elseif contains(argin_fName,'.csv') || ...
+        contains(argin_fName,'_jrc') || ...
+        contains(argin_fName,'_res') %from JRClust
+    
+    try % JRC v3 and v4:
+        load(argin_fName,'spikeTimes','spikeSites','spikeClusters','filtShape')
+        
+        %                 evtWindow = [-0.25, 0.75]; %evtWindowRaw = [-0.5, 1.5]; nSiteDir = 4;
+        %                 waveformsFid=fopen('vIRt32_2019_04_24_16_48_53_5185_1_1_export_filt.jrc');
+        %                 waveforms=fread(waveformsFid,...
+        %                     [sum(abs(evtWindow))*30,nSiteDir,size(spikeClusters,1)],'int16');
+        %                 fclose(waveformsFid);
+        %                 figure; plot(mean(waveforms(1:4:120,spikeClusters==4)'))
+        spikes.unitID=spikeClusters;
+        spikes.times=spikeTimes;
+        spikes.preferredElectrode=spikeSites; %Site with the peak spike amplitude %cviSpk_site Cell of the spike indices per site
+        spikes.templatesIdx=[];
+        spikes.templates=[];
+        spikes.waveforms=[];
+        spikes.bitResolution=[];
+        spikes.samplingRate=[];
+    catch
+        try
+            % v2 updated structure:
+            load(argin_fName,'miClu_log','P','S_clu','dimm_spk',...
+                'viSite_spk','viTime_spk');%'cviSpk_site'
+            
+            spikes.unitID=S_clu.viClu;
+            spikes.times=viTime_spk;
+            spikes.preferredElectrode=viSite_spk; %Site with the peak spike amplitude %cviSpk_site Cell of the spike indices per site
+            spikes.templatesIdx=S_clu.viSite_clu;
+            spikes.templates=S_clu.tmrWav_spk_clu;
+            spikes.waveforms=[];
+            spikes.bitResolution=P.uV_per_bit;
+            spikes.samplingRate=P.sRateHz;
+            
+        catch
+            % old structure
+            load(argin_fName,'S_clu','spikeTimes','spikeSites','P');
+            
+            spikes.unitID=S_clu.spikeClusters;
+            spikes.times=spikeTimes;
+            spikes.preferredElectrode=spikeSites;
+            %                     spikes.templatesIdx=S_clu.clusterTemplates;
+            %                     spikes.templates=S_clu.spikeTemplates;
+            spikes.waveforms=S_clu.tmrWav_spk_clu; %mean waveform
+            spikes.bitResolution=P.uV_per_bit;
+            spikes.samplingRate=P.sampleRateHz;
+            
+            % get filtered waveforms
+            dirListing=dir;
+            spikeWaveFormsFile=cellfun(@(x) strfind(x,'_spkwav'),...
+                {dirListing.name},'UniformOutput',false);
+            if ~isempty(vertcat(spikeWaveFormsFile{:}))
+                vcFile=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,'_spkwav'),...
+                    {dirListing.name},'UniformOutput',false))).name;
+                vcDataType = 'int16';
+                fid=fopen(vcFile, 'r');
+                % mnWav = fread_workingresize(fid, dimm, vcDataType);
+                mnWav = fread(fid, prod(dimm_spk), ['*', vcDataType]); %(nSamples_spk x nSites_spk x nSpikes: int16)
+                if numel(mnWav) == prod(dimm_spk)
+                    mnWav = reshape(mnWav, dimm_spk);
+                else
+                    dimm2 = floor(numel(mnWav) / dimm_spk(1));
+                    if dimm2 >= 1
+                        mnWav = reshape(mnWav, dimm_spk(1), dimm2);
+                    else
+                        mnWav = [];
+                    end
+                end
+                spikes.waveforms=mnWav;
+                spikes.waveforms=permute(spikes.waveforms,[3 1 2]);
+                spikes.waveforms=squeeze(spikes.waveforms(:,:,1)); %keep best waveform only
+                if ~isempty(vcFile), fclose(fid); end
+            end
+        end
+    end
+    %% extract spike waveform
+    % see ...\JRCLUST\@JRC\loadFiles.m > binData = readBin(filename, binShape, dataType)
+    
+    %             The "best" site for a spike is always the top row, but not
+    %             all spikes for a given unit can be assumed to have the same "best" site.
+    %             For a given spike you can find its best or center site in spikeSites.
+    %             Then you can get the list of however many neighboring sites were
+    %             considered from hCfg.siteNeighbors, like:
+    %             hCfg = jrclust.Config('/path/to/your/params.prm');
+    %             hCfg.siteNeighbors
+    %             That will give you an nNeighbors x nSites matrix, so if you want
+    %             the neighbors for the ith site, take the ith column of that matrix.
+    %             Then what you could do is embed all your spikes in a matrix that
+    %             spans all the neighbors of all the spikes in your unit, and for
+    %             those spikes who don't have traces in those sites, simply put nans.
+    %             Then do a nanmean on that matrix.
+    
+    %             filtWFfile=[regexp(argin_fName,'\w+(?=_res)','match','once') '_filt.jrc'];
+    %             if exist('filtShape','var') & exist(fullfile(cd,filtWFfile),'file')
+    % %                 recInfofile=[regexp(argin_fName,'\w+(?=export_res)','match','once') 'recInfo.mat'];
+    % %                 if exist(fullfile(cd,recInfofile),'file')
+    % %                     load(recInfofile);
+    % %                     exportDirListing=dir(recInfo.export.directory);
+    % %                     paramFileIdx=cellfun(@(fName) contains(fName,'prm'),...
+    % %                         {exportDirListing.name});
+    % %                     hCfg = jrclust.Config(fullfile(exportDirListing(paramFileIdx).folder,...
+    % %                         exportDirListing(paramFileIdx).name));
+    % %                     siteNeighbors=hCfg.siteNeighbors;
+    % %                 else
+    % %                     % calculate it
+    % %                     % siteNeighbors = findSiteNeighbors(siteLoc, 2*nSiteDir + 1, ignoreSites, shankMap);
+    % %                 end
+    %                 fid = fopen(filtWFfile, 'r');
+    %                 spikes.waveforms= reshape(fread(fid, inf, '*int16'), filtShape);
+    % %                 spikes.waveforms= fread(fid, inf, '*int16');
+    %                 fclose(fid);
+    %                 spikes.waveforms = permute(spikes.waveforms,[3 1 2]);
+    % %                 unitIDs=unique(spikes.unitID);
+    % %                 for unitNum=1:numel(unitIDs)
+    % %                     %which sites does it occur on?
+    % %                     unique(spikes.preferredElectrode(spikes.unitID==unitIDs(unitNum)))
+    % %                 end
+    % %                 spikesEmbedding=nan(filtShape(3), size(siteNeighbors,2));
+    %
+    %             else
+    if (isempty(spikes.waveforms) || size(spikes.waveforms,1) <  size(spikes.unitID,1))...
+            && (exist('traces','var') && ~isempty(traces))
+        spikes.waveforms=NaN(size(spikes.times,1),50);
+        electrodesId=unique(spikes.preferredElectrode);
+        for electrodeNum=1:numel(electrodesId)
+            if isa(traces,'memmapfile') % reading electrode data from .dat file
+                spikes.waveforms(spikes.preferredElectrode==electrodeNum,:)=...
+                    ExtractChunks(traces.Data(electrodeNum:numel(electrodesId):max(size(traces.Data))),...
+                    spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
+            else
+                spikes.waveforms(spikes.preferredElectrode==electrodeNum,:)=...
+                    ExtractChunks(traces(electrodeNum,:),...
+                    spikes.times(spikes.preferredElectrode==electrodeNum),50,'tshifted'); %'tzero' 'tmiddle' 'tshifted'
+            end
+            % scale to resolution
+            %             spikes.waveforms{elNum,1}=spikes.Waveforms{elNum,1}.*bitResolution;
+        end
+    end
+    % figure; hold on
+    % plot(mean(spikes.waveforms(spikeClusters==46,12:40))/bitResolution); % bitResolution=0.25;
+    % plot(mean(waveforms(spikeClusters==46,:,1)))
+    % refCh=mode(spikes.preferredElectrode(spikeClusters==4));
+    % spikeTimes=spikes.times(spikeClusters==4);
+    % spikeSites=spikes.preferredElectrode(spikeClusters==4);
+    % unitWF=waveforms(spikeClusters==4,:,:);
+    % unitWF_t=spikes.waveforms(spikeClusters==4,:);
+    % figure; hold on;
+    % for chNum=1:16
+    %     plot(traces(chNum,1:6000)+(chNum-1)*max(max(traces(:,1:6000)))*2,'k')
+    % end
+    % for spikeNum=1:15
+    %     for spkchNum=1:9
+    %         plot(spikeTimes(spikeNum)-10:spikeTimes(spikeNum)+21,unitWF(spikeNum,:,spkchNum)+int16((refCh-1)*max(max(traces(:,1:6000)))*2))
+    %     end
+    % %     plot(spikeTimes(spikeNum)-10:spikeTimes(spikeNum)+21,unitWF_t(spikeNum,:)+double((refCh-1)*max(max(traces(:,1:6000)))*2),'b')
+    % end
+    %
     %     %% import info from cvs file export
     %     %     clusterInfo = ImportJRClusSortInfo(fName);
     %
@@ -361,7 +343,7 @@ elseif contains(argin_fName,'.csv') || ...
     %     %     Spikes.SpikeTimes=clusterInfo.bestSite;
     %
     %
-    %     
+    %
     %     %% degenerate. keeping largest waveforms
     %     %     keepSite=squeeze(prod(abs(mnWav)));[keepSite,~]=find(keepSite==max(keepSite));
     %     %     waveForms=nan(size(mnWav,1),size(mnWav,3));

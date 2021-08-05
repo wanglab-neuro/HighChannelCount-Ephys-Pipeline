@@ -11,7 +11,7 @@ for fileNum=1:size(dataFiles,1)
         recInfo = allRecInfo{fileNum};
         cd([recInfo.recordingName])
         jrc('bootstrap',[recInfo.recordingName '_export.meta'],'-noconfirm','-advanced')
-        jrc('import-ksort',cd,false);
+        jrc('import-ksort',fullfile(cd,'kilosort3'),false);
         cd ..
     catch
         continue

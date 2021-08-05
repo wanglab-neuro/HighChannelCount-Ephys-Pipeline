@@ -33,7 +33,12 @@ end
 recInfoFile=cellfun(@(flnm) contains(flnm,'Info'),allDataFiles);
 if any(recInfoFile)
     recInfo=load(allDataFiles{recInfoFile});
-    recInfo=recInfo.(cell2mat(fields(recInfo)));
+    if any(contains(fields(recInfo),'RecInfo'))
+        fldNames=fields(recInfo);
+        recInfo=recInfo.(fldNames{contains(fields(recInfo),'RecInfo')}){:};
+    else
+        recInfo=recInfo.(cell2mat(fields(recInfo)));
+    end
 else
     recInfo.sessionName=GetCommonString(allDataFiles);
     if ~isempty(recInfo.sessionName)
@@ -88,24 +93,7 @@ if ~isfield(recInfo,'channelMap')
 %     recInfo.channelMap = 1:numElectrodes;
 end
 
-%% Load recording traces
-recDataFile=cellfun(@(flnm) contains(flnm,'rec.'),allDataFiles);
-traces = memmapfile(allDataFiles{recDataFile},'Format','int16');
-allTraces=double(traces.Data);
-recDuration=int64(length(allTraces)/numElectrodes);
-try
-    allTraces=reshape(allTraces,[numElectrodes recDuration]);
-catch
-    allTraces=reshape(allTraces',[recDuration numElectrodes]);
-end
-%   %alternatively (equivalent):
-%     traceFile = fopen(allDataFiles{recDataFile}, 'r');
-%     allTraces = fread(traceFile,[numElectrodes,Inf],'int16');
-%     fclose(traceFile);
-
-% remap traces
-allTraces=allTraces(recInfo.channelMap,:);
-
+%% define sampling rate
 if isfield(recInfo,'samplingRate')
     samplingRate=recInfo.samplingRate;
 else
@@ -113,23 +101,47 @@ else
     dlg_title = 'Define sampling rate'; num_lines = 1; defaultans = {'30000'};
     samplingRate = str2double(cell2mat(inputdlg(prompt,dlg_title,num_lines,defaultans)));
 end
+    
+%% Load recording traces
+if false % too heavy for long recordings
+    recDataFile=cellfun(@(flnm) contains(flnm,'rec.'),allDataFiles);
+    traces = memmapfile(allDataFiles{recDataFile},'Format','int16');
+    allTraces=double(traces.Data);
+    recDuration=int64(length(allTraces)/numElectrodes);
+    try
+        allTraces=reshape(allTraces,[numElectrodes recDuration]);
+    catch
+        allTraces=reshape(allTraces',[recDuration numElectrodes]);
+    end
+    %   %alternatively (equivalent):
+    %     traceFile = fopen(allDataFiles{recDataFile}, 'r');
+    %     allTraces = fread(traceFile,[numElectrodes,Inf],'int16');
+    %     fclose(traceFile);
+    
+    % remap traces
+    allTraces=allTraces(recInfo.channelMap,:);
+    
 
-filterTraces=true; %Might change that in case traces have already been filtered    
-%% Filter traces if needed
-if filterTraces == true
-    preprocOption={'CAR','all'};
-    allTraces=PreProcData(allTraces,samplingRate,preprocOption);
-% allTraces=FilterTrace(allTraces,samplingRate);
-end
-
+    
+    filterTraces=true; %Might change that in case traces have already been filtered
+    %% Filter traces if needed
+    if filterTraces == true
+        preprocOption={'CAR','all'};
+        allTraces=PreProcData(allTraces,samplingRate,preprocOption);
+        % allTraces=FilterTrace(allTraces,samplingRate);
+    end
 % figure; hold on;
 % for chNum=1:16
 %     plot(allTraces(chNum,1:6000)+(chNum-1)*max(max(allTraces(:,1:6000)))*2,'k')
 % end
+else
+    allTraces=[];
+end
 
 %% Load spike data 
 spikeDataFile=cellfun(@(flnm) contains(flnm,'spikes'),allDataFiles);
-spikes=LoadSpikeData(allDataFiles{spikeDataFile},allTraces);
+sortDir=fullfile(recInfo.dirName(1:end-5),'SpikeSorting',recInfo.recordingName,'kilosort3'); %if importing from KS3 directly
+spikes=LoadSpikeData(allDataFiles{spikeDataFile},[],sortDir);
 % check information
 if isfield(spikes,'samplingRate') 
     if isempty(spikes.samplingRate)
@@ -190,7 +202,9 @@ end
 TTLFile=cellfun(@(flnm) contains(flnm,'_TTLs'),allDataFiles);
 if any(TTLFile)
     pulseFile = fopen(allDataFiles{TTLFile}, 'r');
-    TTLTimes = fread(pulseFile,'single'); % [2,Inf]
+%     TTLTimes = fread(pulseFile,'single'); % files recorded with only
+%     rising phase of TTL (<2021) 
+    TTLTimes = fread(pulseFile,[2,Inf],'single'); % 
     fclose(pulseFile);
 else
     TTLTimes=[];
@@ -203,8 +217,8 @@ end
 if ~any(cellfun(@(flnm) contains(flnm,'wMeasurements'),allDataFiles))
         % run ConvertWhiskerData to get those files. Should already be
         % done at this point, though.
-        ConvertWhiskerData;
-        dirListing=dir(startingDir);
+%         ConvertWhiskerData;
+%         dirListing=dir(startingDir);
 end
 whiskerTrackingFiles=cellfun(@(flnm) contains(flnm,'wMeasurements'),allDataFiles);
 if any(whiskerTrackingFiles)
@@ -215,7 +229,10 @@ if any(whiskerTrackingFiles)
 %         {dirListing.name})).name);
 %     whiskerTrackingData.phase=load(dirListing(cellfun(@(flnm) contains(flnm,'whiskerphase'),...
 %         {dirListing.name})).name);
+else
+    whiskerTrackingData=[];
 end
+
 recInfo.SRratio=spikes.samplingRate; %/whiskerTrackingData.samplingRate;
 
 %% Load other data
@@ -265,9 +282,15 @@ end
 % numTTLs=numel(vFrameTimes)
 
 % Adjust frame times to frame number
+try
 [whiskerTrackingData,vidTimes]=AdjustFrameNumFrameTimes(whiskerTrackingData,...
     vidTimes,whiskerTrackingData.samplingRate);
-
+catch
+    disp('whisker tracking data incorrect or missing')
+    whiskerTrackingData.whiskers=[];
+    whiskerTrackingData.samplingRate=[];
+end
+    
 % keep info about video time window
 recInfo.vTimeLimits = [vidTimes(1) vidTimes(end)];
 
