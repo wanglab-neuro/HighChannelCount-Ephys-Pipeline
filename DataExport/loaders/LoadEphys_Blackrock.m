@@ -96,7 +96,14 @@ TTL_ID=logical(dec2bin(digInEvents)-'0');
 if ~isempty(TTL_ID)
     TTLs=rmfield(TTLs,'continuous');%     clear TTLs;
     channelIDs=strsplit(deblank(eventData.IOLabels{1, 2}),'_');
-    for TTLChan=size(TTL_ID,2):-1:1
+    if size(TTL_ID,2)>size(channelIDs,2)
+        %not enough labels in digital channel naming
+        % Option 1 -> set extra channel names
+        for digCh=size(channelIDs,2)+(1:size(TTL_ID,2)-size(channelIDs,2))
+            channelIDs{digCh}=['DIGIN_' num2str(digCh)];
+        end
+    end
+    for TTLChan=size(TTL_ID,2):-1:1 %Option 2: keep only the labeled channels -> size(TTL_ID,2)-size(channelIDs,2)+1
         TTLIdx=find(TTL_ID(:,TTLChan));
         if ~isempty(TTLIdx)
             switch TTLtype
