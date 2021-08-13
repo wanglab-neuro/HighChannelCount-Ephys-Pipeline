@@ -104,17 +104,30 @@ if ~isempty(TTL_ID)
         end
     end
     for TTLChan=size(TTL_ID,2):-1:1 %Option 2: keep only the labeled channels -> size(TTL_ID,2)-size(channelIDs,2)+1
-        TTLIdx=find(TTL_ID(:,TTLChan));
-        if ~isempty(TTLIdx)
+        if any(TTL_ID(:,TTLChan))
             switch TTLtype
                 case 'rise'
+                    TTLIdx=find(TTL_ID(:,TTLChan));
                     %then need to define TTL duration
                     TTLdur= mode(diff(digInTimes(TTLIdx)))/2; % assuming 50% cycle - this is only to have an estimate for camera TTLs - not laser or trials
                     TTLdur= min([TTLdur samplingRate/1000]); % set upper boundary to a reasonable duration (1ms)
                     % remove TTLs instance shorter than that duration
                     TTLIdx=TTLIdx(~ismember(TTLIdx, find(diff(digInTimes(TTLIdx))<TTLdur)+1));
                 case 'rise&fall'
-                    TTLdur= mode(diff(digInTimes([TTLIdx; find([0; diff(TTL_ID(:,TTLChan))])])));
+                    TTLIdx=bwconncomp(TTL_ID(:,TTLChan));%'PixelIdxList'
+                    
+                    if TTLIdx.NumObjects==1 %e.g., when only camera sync TTL, no laser pulses
+                        disp('Only one TTL channel. Check results, this bit of code in LoadEphys_Blackrock hasnt been test');
+                        keyboard;
+                        %                     TTLIdx=TTLIdx.PixelIdxList{:};
+                    end
+                    TTLdur=mode(cellfun(@(pulse) digInTimes(pulse(end))-digInTimes(pulse(1))+1,...
+                        TTLIdx.PixelIdxList));
+                    %                     TTLdur= mode(diff(digInTimes([TTLIdx; find([0; diff(TTL_ID(:,TTLChan))])])));
+                    TTLIdx=cellfun(@(pulse) pulse(1), TTLIdx.PixelIdxList);
+                    if TTLIdx(1)==1
+                        TTLIdx=TTLIdx(2:end); %starting on high
+                    end
                     if TTLIdx(end)==numel(digInEvents)
                         TTLIdx=TTLIdx(1:end-1); %spurious event
                     end
@@ -126,14 +139,14 @@ if ~isempty(TTL_ID)
                 TTLs(chNum).end=digInTimes(TTLIdx)'/samplingRate + (TTLdur/samplingRate);
                 TTLs(chNum).interval=mode(diff(TTLs(chNum).start));
                 TTLs(chNum).timeBase='s';
-                TTLs(chNum).samplingRate=samplingRate;                
+                TTLs(chNum).samplingRate=samplingRate;
                 TTLs(chNum).TTLtimes=digInTimes(TTLIdx);
-
-%                 TTLs{size(TTL_ID,2)-TTLChan+1}=...
-%                     struct('TTLtimes',digInTimes(TTLIdx)/sampleRate,...
-%                     'samplingRate',1,...
-%                     'start',digInTimes(TTLIdx)'/sampleRate,...
-%                     'end',digInTimes(TTLIdx)'/sampleRate + (TTLdur/sampleRate));
+                
+                %                 TTLs{size(TTL_ID,2)-TTLChan+1}=...
+                %                     struct('TTLtimes',digInTimes(TTLIdx)/sampleRate,...
+                %                     'samplingRate',1,...
+                %                     'start',digInTimes(TTLIdx)'/sampleRate,...
+                %                     'end',digInTimes(TTLIdx)'/sampleRate + (TTLdur/sampleRate));
                 %ConvTTLtoTrials(digInTimes(TTLIdx),TTLdur,sampleRate);
             catch
                 continue;
