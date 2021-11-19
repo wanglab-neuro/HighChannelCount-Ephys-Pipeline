@@ -1,0 +1,17 @@
+{
+	"numChannels":	1,
+	"numShank":	1,
+	"surfaceDim":	[15,11],
+	"maxSite":	1,
+	"Shank":	[1],
+	"Electrode":	[1],
+	"ProbeConnector":	[],
+	"OM32Mapping":	[],
+	"IntanHS":	[],
+	"OEChannel":	[],
+	"BlackrockChannel":	[Dam80],
+	"x_geom":	[0],
+	"y_geom":	[0],
+	"connected":	[1],
+	"geometry":	[[0,0]]
+}

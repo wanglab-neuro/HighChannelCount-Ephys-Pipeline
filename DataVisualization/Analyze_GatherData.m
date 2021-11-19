@@ -60,10 +60,12 @@ ephysTraceFiles=ephysTraceFiles(cellfun(@(flnm) contains(flnm,{'_export';'_trace
 infoFiles = cellfun(@(fileFormat) dir([startingDir filesep '**' filesep fileFormat]),...
     {'*info*','*Info*'},'UniformOutput', false);
 infoFiles=vertcat(infoFiles{~cellfun('isempty',infoFiles)});
+infoFiles=infoFiles(~cellfun(@(flnm) contains(flnm,{'cluster_info';'trial'}),...
+    {infoFiles.name}));
 
 %% Probe file (may be needed for channel map, etc)
 probeFiles = cellfun(@(fileFormat) dir([startingDir filesep '**' filesep fileFormat]),...
-    {'*prb','*Probe*'},'UniformOutput', false);
+    {'*prb','*Probe*','*Adaptor.json*'},'UniformOutput', false);
 probeFiles =vertcat(probeFiles{~cellfun('isempty',probeFiles )});
 probeFiles=probeFiles(~cellfun(@(flnm) contains(flnm,{'pkl'}),...
     {probeFiles.name}));
@@ -85,17 +87,17 @@ if isempty(whiskerFiles{:})
             {'*_wMeasurements.mat'},'UniformOutput', false); %'*.csv','whiskerTrackingData',
     else
         %% Ask location
-        disp('no whisker tracking file')
-        [whiskerFiles,whiskerFilesPath] = uigetfile({'*.mat';'*.*'},...
-            'Select the whisker tracking file',startingDir,'MultiSelect','on');
-        if ~isempty(whiskerFiles) && whiskerFiles
-            if ~iscell(whiskerFiles); whiskerFiles={whiskerFiles}; end
-            whiskerFiles=cellfun(@(fName) fullfile(whiskerFilesPath,fName), whiskerFiles);
-        else
+%         disp('no whisker tracking file')
+%         [whiskerFiles,whiskerFilesPath] = uigetfile({'*.mat';'*.*'},...
+%             'Select the whisker tracking file',startingDir,'MultiSelect','on');
+%         if ~isempty(whiskerFiles) && whiskerFiles
+%             if ~iscell(whiskerFiles); whiskerFiles={whiskerFiles}; end
+%             whiskerFiles=cellfun(@(fName) fullfile(whiskerFilesPath,fName), whiskerFiles);
+%         else
             disp('no whisker tracking file')
             whiskerFiles={};
             %return
-        end
+%         end
     end
 end
 whiskerFiles=vertcat(whiskerFiles{~cellfun('isempty',whiskerFiles)});
@@ -126,6 +128,11 @@ videoSyncInfoFiles=cellfun(@(fileFormat) dir([startingDir filesep '**' filesep f
     {'*_VideoSyncFilesLoc*';'*_WhiskerSyncFilesLoc*'},'UniformOutput', false);
 videoSyncInfoFiles=vertcat(videoSyncInfoFiles{~cellfun('isempty',videoSyncInfoFiles)});
 
+%% Trial info
+trialInfoFiles=cellfun(@(fileFormat) dir([startingDir filesep '**' filesep fileFormat]),...
+    {'*trialInfo*'},'UniformOutput', false);
+trialInfoFiles=vertcat(trialInfoFiles{~cellfun('isempty',trialInfoFiles)});
+
 %% Decide which file to use
 % Keep only the most recent data file
 allDataFiles=struct('spikeSortingFiles',spikeSortingFiles,...
@@ -138,7 +145,8 @@ allDataFiles=struct('spikeSortingFiles',spikeSortingFiles,...
     'videoSyncInfoFiles',videoSyncInfoFiles,...
     'whiskerFiles',whiskerFiles,...
     'flowsensorFiles', flowsensorFiles, ...
-    'rotaryencoderFiles', rotaryencoderFiles);
+    'rotaryencoderFiles', rotaryencoderFiles,...
+    'trialInfoFiles',trialInfoFiles);
 adf_fn=fields(allDataFiles);
 for dataFileNum=1:numel(adf_fn)
     if isempty(allDataFiles.(adf_fn{dataFileNum})); continue; end
@@ -164,9 +172,13 @@ commonStr = GetCommonString(fileNames);
 if ~isempty(commonStr)
     commonStr=regexprep(commonStr,'[^a-zA-Z0-9]+$','');
 end
-
+if length(commonStr)<3
+    commonStr=allDataFiles.infoFiles.name(1:end-10);
+% 	recInfo=LoadRecInfo(allDataFiles.infoFiles);
+%     commonStr=recInfo.baseName;
+end
+    
 %% save files to server
-
 outDirTemplate=fullfile(directoryHierarchy{1:end-1},'Analysis',commonStr);
 try
     conn=jsondecode(fileread(fullfile(fileparts(mfilename('fullpath')),'NESE_connection.json')));

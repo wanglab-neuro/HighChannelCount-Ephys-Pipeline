@@ -13,6 +13,8 @@ pulseDur=mode([TTLsProperties.Area]);
 sF=samplingRate/1000;
 if samplingRate<=1000
     TTLsProperties=TTLsProperties([TTLsProperties.Area]>=max([(pulseDur-(1*sF)) 1*sF]) & [TTLsProperties.Area]<=(pulseDur+(1*sF)));
+elseif pulseDur==2 %bare min
+    TTLsProperties=TTLsProperties([TTLsProperties.Area]>=pulseDur);
 else
     TTLsProperties=TTLsProperties([TTLsProperties.Area]>max([(pulseDur-(1*sF)) 1*sF]) & [TTLsProperties.Area]<=(pulseDur+(1*sF)));
 end    
@@ -27,8 +29,8 @@ end
 
 if false
 figure; hold on 
-plot(continuousTrace(1,:)); % plot(continuousTrace(2,:))
-plot(TTLtimes,ones(1,length(TTLtimes))*rms(continuousTrace(1,:))*5,'d')
+plot(continuousTrace(1,1:3000000)); % plot(continuousTrace(2,:))
+yline(rms(continuousTrace(1,:))*20)
 end
 
 

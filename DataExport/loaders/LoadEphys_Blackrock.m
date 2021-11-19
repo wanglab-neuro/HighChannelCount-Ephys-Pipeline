@@ -10,7 +10,7 @@ function [data,rec,spikes,TTLs]=LoadEphys_Blackrock(dName,fName)
 
 wb = waitbar( 0, 'Reading Data File...' );
 tic
-data = openNSx(fullfile(cd,fName));
+data = openNSx(fullfile(dName,fName));
 
 if iscell(data.Data) && size(data.Data,2)>1 %gets splitted into two cells sometimes for no reason
     data.Data=[data.Data{:}]; %remove extra data.Data=data.Data(:,1:63068290);
@@ -19,7 +19,7 @@ end
 spikes=struct('clusters',[],'electrodes',[],'spikeTimes',[],'waveForms',[],'metadata',[]);
 
 % Get channel info and spike data
-eventData=openNEV([fName(1:end-3) 'nev']);
+eventData=openNEV(fullfile(dName,[fName(1:end-3) 'nev']));
 spikes.clusters=eventData.Data.Spikes.Unit;
 spikes.electrodes=eventData.Data.Spikes.Electrode;
 spikes.spikeTimes=eventData.Data.Spikes.TimeStamp;
@@ -45,7 +45,13 @@ if ~isfield(data.ElectrodesInfo,'Label') || ...
     % labeled as any digital channel. Check Connector banks
     analogChannels=cellfun(@(x) contains(x,'D'),{data.ElectrodesInfo.ConnectorBank});
     rec.chanID=rec.chanID(ismember(rec.chanList,find(~analogChannels)));
-    data.Data=data.Data(ismember(rec.chanList,find(~analogChannels)),:);
+    if isempty(rec.chanID)
+        % check whether recording was actually done with the analog channel
+        analogChIdx=contains(data.ElectrodesInfo.Label,{'Dam80'});
+        data.Data=data.Data(analogChIdx,:);
+    else
+        data.Data=data.Data(ismember(rec.chanList,find(~analogChannels)),:);
+    end
 end
 rec.numRecChan=size(data.Data,1); %data.MetaTags.ChannelCount;  %number of raw data channels.
 %         rec.date=[cell2mat(regexp(data.MetaTags.DateTime,'^.+\d(?= )','match'))...
@@ -98,9 +104,21 @@ if ~isempty(TTL_ID)
     channelIDs=strsplit(deblank(eventData.IOLabels{1, 2}),'_');
     if size(TTL_ID,2)>size(channelIDs,2)
         %not enough labels in digital channel naming
-        % Option 1 -> set extra channel names
-        for digCh=size(channelIDs,2)+(1:size(TTL_ID,2)-size(channelIDs,2))
-            channelIDs{digCh}=['DIGIN_' num2str(digCh)];
+        % Option 1 -> label belongs to DIG label dictionary 
+        labelDict={'CZ'};
+        labelMatchIdx=cellfun(@(x) contains(channelIDs,x), labelDict);
+        if any(labelMatchIdx)
+            switch labelDict{labelMatchIdx}
+                case 'CZ'
+                    channelIDs{1}='Camera';
+                    channelIDs{2}='Zaber';
+                otherwise
+            end
+        else
+            % Option 2 -> set extra channel names
+            for digCh=size(channelIDs,2)+(1:size(TTL_ID,2)-size(channelIDs,2))
+                channelIDs{digCh}=['DIGIN_' num2str(digCh)];
+            end
         end
     end
     for TTLChan=size(TTL_ID,2):-1:1 %Option 2: keep only the labeled channels -> size(TTL_ID,2)-size(channelIDs,2)+1
@@ -209,6 +227,27 @@ else % check analog channels in NS file
         if size(TTLs,2)==1
             TTLs=TTLs{1};
         end
+    end
+end
+%% Check "backup" TTL recordings on analog channel. 
+buFileName=strrep(fName,'ns6','ns5');
+if logical(exist(buFileName,'file'))
+    buTTLs=openNSx(buFileName);
+    if contains(buTTLs.ElectrodesInfo.Label,'camera')
+        analogTTLTrace=buTTLs.Data;
+        [TTLtimes,TTLdur]=ContinuousToTTL(analogTTLTrace(TTLChan,:),buTTLs.MetaTags.SamplingFreq,'keepfirstonly');
+        if ~isempty(TTLtimes)
+            buTTLs.TTLs=ConvTTLtoTrials(TTLtimes,TTLdur,buTTLs.MetaTags.SamplingFreq);
+        end
+        
+        newRow=size(TTLs,2)+1;
+        TTLs(newRow).channelType='Camera';
+        TTLs(newRow).start=buTTLs.TTLs(2).start/1000';
+        TTLs(newRow).end=buTTLs.TTLs(2).end/1000';
+        TTLs(newRow).interval=mode(diff(TTLs(newRow).start));
+        TTLs(newRow).timeBase='s';
+        TTLs(newRow).samplingRate=buTTLs.MetaTags.SamplingFreq;
+        TTLs(newRow).TTLtimes=buTTLs.TTLs(1).TTLtimes;
     end
 end
 

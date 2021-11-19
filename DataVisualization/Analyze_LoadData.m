@@ -1,4 +1,4 @@
-function [ephys,behav,pulses,targetDir]=Analyze_LoadData
+function [ephys,behav,pulses,trials,targetDir]=Analyze_LoadData
 % Loads data for analysis of correlation between bursts/spike rate 
 % and periodic behaviors (whisking, breathing)
 %% Directory structure assumed to be:
@@ -24,25 +24,28 @@ if ~strcmp(currentfolder,'Analysis') &&...
     [allDataFiles,targetDir]=Analyze_GatherData;
     cd(targetDir) %fullfile(directoryHierarchy{1:end-1},'Analysis'))
 else
+    targetDir=cd;
     % load all files in current directory 
     allDataFiles=dirListing([dirListing.isdir]==0);
     allDataFiles={allDataFiles.name}';
 end
 
 %% Get some info about the recording if possible
-recInfoFile=cellfun(@(flnm) contains(flnm,'Info'),allDataFiles);
+recInfoFile=cellfun(@(flnm) contains(flnm,'Info','IgnoreCase',true) &&...
+    ~contains(flnm,'trial','IgnoreCase',true),allDataFiles);
 if any(recInfoFile)
-    recInfo=load(allDataFiles{recInfoFile});
-    if any(contains(fields(recInfo),'RecInfo'))
-        fldNames=fields(recInfo);
-        recInfo=recInfo.(fldNames{contains(fields(recInfo),'RecInfo')}){:};
-    else
-        recInfo=recInfo.(cell2mat(fields(recInfo)));
-    end
+    recInfo=LoadRecInfo(allDataFiles{recInfoFile});
 else
     recInfo.sessionName=GetCommonString(allDataFiles);
     if ~isempty(recInfo.sessionName)
         recInfo.sessionName=regexprep(recInfo.sessionName,'[^a-zA-Z0-9]+$','');
+    end
+end
+if ~isfield(recInfo,'baseName')
+    if isfield(recInfo,'recordingName')
+        recInfo.baseName=recInfo.recordingName;
+    else
+        recInfo.baseName=recInfo.sessionName;
     end
 end
 
@@ -58,14 +61,25 @@ if ~isfield(recInfo,'sessionName')
 end
 
 %% load probe file
-probeFile=cellfun(@(flnm) contains(flnm,'prb') || contains(flnm,'Probe') ,allDataFiles);
+probeFile=cellfun(@(flnm) contains(flnm,{'prb','Probe','.json'}) ,allDataFiles);
 if any(probeFile)
+    if sum(probeFile)>1
+        probeFiles=allDataFiles(probeFile);
+        probeFile=find(probeFile);
+        probeFile=probeFile(cellfun(@(x) contains(x,'Adaptor'), probeFiles));
+    end
     [~, ~, fExt] = fileparts(allDataFiles{probeFile});
     switch lower(fExt)
         case '.mat'
             load(allDataFiles{probeFile});
             recInfo.channelMap=chanMap;
             recInfo.probeGeometry=[xcoords';ycoords'];
+        case '.json'
+            probeInfo=jsondecode(fileread(allDataFiles{probeFile}));
+            prbFlds=fields(probeInfo);
+            recInfo.channelMap = probeInfo.(prbFlds{contains(prbFlds,'BlackrockChannel')});
+            recInfo.probeGeometry = probeInfo.geometry;
+            recInfo.exportedChan=probeInfo.numChannels;
         otherwise  % Under all circumstances SWITCH gets an OTHERWISE!
             fid  = fopen(allDataFiles{probeFile},'r');
             probeParams=fread(fid,'*char')';
@@ -140,7 +154,7 @@ end
 
 %% Load spike data 
 spikeDataFile=cellfun(@(flnm) contains(flnm,'spikes'),allDataFiles);
-sortDir=fullfile(recInfo.dirName(1:end-5),'SpikeSorting',recInfo.recordingName,'kilosort3'); %if importing from KS3 directly
+sortDir=fullfile(recInfo.dirName(1:end-5),'SpikeSorting',recInfo.baseName,'kilosort3'); %if importing from KS3 directly
 spikes=LoadSpikeData(allDataFiles{spikeDataFile},[],sortDir);
 % check information
 if isfield(spikes,'samplingRate') 
@@ -253,6 +267,18 @@ else
     reData=[];
 end
 
+%% Load trial data
+trialsFile=cellfun(@(flnm) contains(flnm,'trial'),allDataFiles);
+if any(trialsFile)
+    % four columns:
+    % trial_idx	repetition_idx	distCondition_idx	curr_distance
+    trials = readmatrix(allDataFiles{trialsFile});
+    trials=table(trials(:,1),trials(:,2),trials(:,3),trials(:,4),...
+        'VariableNames',{'trial_idx';'repetition_idx';'distCondition_idx';'curr_distance'});
+else
+    trials=[];
+end
+
 %% Data integrity checks 
 % Check video frame num vs TTLs if difference seems too big here
 % if isfield(recInfo,'export')
@@ -328,6 +354,7 @@ behav=struct('whiskers',whiskerTrackingData.whiskers,...
 pulses=struct('TTLTimes',TTLTimes);
 cd(startingDir);
 
+end
 %% sanity check plots
 % %do plot pre and post sync
 % figure; hold on 
