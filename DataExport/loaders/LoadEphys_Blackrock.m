@@ -230,24 +230,24 @@ else % check analog channels in NS file
     end
 end
 %% Check "backup" TTL recordings on analog channel. 
-buFileName=strrep(fName,'ns6','ns5');
+buFileName = strrep(fName,'ns6','ns5');
 if logical(exist(buFileName,'file'))
-    buTTLs=openNSx(buFileName);
+    buTTLs = openNSx(buFileName);
     if contains(buTTLs.ElectrodesInfo.Label,'camera')
-        analogTTLTrace=buTTLs.Data;
-        [TTLtimes,TTLdur]=ContinuousToTTL(analogTTLTrace(TTLChan,:),buTTLs.MetaTags.SamplingFreq,'keepfirstonly');
+        analogTTLTrace = buTTLs.Data;
+        [TTLtimes,TTLdur] = ContinuousToTTL(analogTTLTrace(TTLChan,:), buTTLs.MetaTags.SamplingFreq, 'regularinterval');
         if ~isempty(TTLtimes)
-            buTTLs.TTLs=ConvTTLtoTrials(TTLtimes,TTLdur,buTTLs.MetaTags.SamplingFreq);
+            buTTLs.TTLs = ConvTTLtoTrials(TTLtimes, TTLdur, buTTLs.MetaTags.SamplingFreq);
         end
         
-        newRow=size(TTLs,2)+1;
-        TTLs(newRow).channelType='Camera';
-        TTLs(newRow).start=buTTLs.TTLs(2).start/1000';
-        TTLs(newRow).end=buTTLs.TTLs(2).end/1000';
-        TTLs(newRow).interval=mode(diff(TTLs(newRow).start));
-        TTLs(newRow).timeBase='s';
-        TTLs(newRow).samplingRate=buTTLs.MetaTags.SamplingFreq;
-        TTLs(newRow).TTLtimes=buTTLs.TTLs(1).TTLtimes;
+        newRow = size(TTLs,2) + 1;
+        TTLs(newRow).channelType = 'Camera';
+        TTLs(newRow).start = shiftdim(buTTLs.TTLs(2).start / 1000);
+        TTLs(newRow).end = shiftdim(buTTLs.TTLs(2).end / 1000);
+        TTLs(newRow).interval = mode(diff(TTLs(newRow).start));
+        TTLs(newRow).timeBase = 's';
+        TTLs(newRow).samplingRate = buTTLs.MetaTags.SamplingFreq;
+        TTLs(newRow).TTLtimes = buTTLs.TTLs(1).TTLtimes;
     end
 end
 
