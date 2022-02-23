@@ -252,7 +252,8 @@ if logical(exist(buFileName,'file'))
 end
 
 if any(cellfun(@isempty,{TTLs.channelType}))
-    TTLs=AssignTTLs(TTLs);
+    %     TTLs=AssignTTLs(TTLs);
+    TTLs=TTLs(~cellfun(@isempty,{TTLs.channelType}));
 end
 
 close(wb);
