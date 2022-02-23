@@ -213,7 +213,7 @@ if spikes.times(end) > size(allTraces,2)
 end
 
 %% Load other TTLs
-TTLFile=cellfun(@(flnm) contains(flnm,'_TTLs'),allDataFiles);
+TTLFile=cellfun(@(flnm) contains(flnm,{'_TTLs','_trialTTLs','_optoTTLs'}),allDataFiles);
 if any(TTLFile)
     pulseFile = fopen(allDataFiles{TTLFile}, 'r');
 %     TTLTimes = fread(pulseFile,'single'); % files recorded with only
@@ -253,8 +253,12 @@ recInfo.SRratio=spikes.samplingRate; %/whiskerTrackingData.samplingRate;
 flowsensorFiles=cellfun(@(flnm) contains(flnm,'_fs.'),allDataFiles);
 if any(flowsensorFiles)
     fsData = memmapfile(allDataFiles{flowsensorFiles},'Format','int16');
-    fsData=fsData.Data;
-%     fsData=smooth(single(fsData),100); %should be done already
+    if isfield(fsData,'Data')
+        fsData=fsData.Data;
+    else
+        fsData=[];
+    end
+    %     fsData=smooth(single(fsData),100); %should be done already
 else
     fsData=[];
 end
@@ -262,7 +266,11 @@ end
 rotaryencoderFiles=cellfun(@(flnm) contains(flnm,'_re.'),allDataFiles);
 if any(rotaryencoderFiles)
     reData = memmapfile(allDataFiles{rotaryencoderFiles},'Format','int16');
-    reData=reData.Data;
+    if isfield(reData,'Data')
+        reData=reData.Data;
+    else
+        reData=[];
+    end
 else
     reData=[];
 end
@@ -343,7 +351,7 @@ if syncCut
 end
 
 %% convert spike times to seconds
-spikes.times  = single(spikes.times)/spikes.samplingRate;
+spikes.times = single(spikes.times)/spikes.samplingRate;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %% group data in structure
@@ -352,6 +360,7 @@ behav=struct('whiskers',whiskerTrackingData.whiskers,...
     'whiskerTrackingData',rmfield(whiskerTrackingData,'whiskers'),'vidTimes',vidTimes,...
     'breathing',fsData,'wheel',reData);
 pulses=struct('TTLTimes',TTLTimes);
+if size(TTLTimes,1)>1; pulses.duration=mode(diff(TTLTimes)); end
 cd(startingDir);
 
 end

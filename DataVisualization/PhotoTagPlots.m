@@ -6,7 +6,7 @@ end
 
 %% variables
 fileName=ephysData.recInfo.sessionName; %'vIRt44_1210_5450';
-TTLs.start=pulses.TTLTimes; %(1,:); TTLs.end=pulses.TTLTimes(2,:);
+TTLs.start=pulses.TTLTimes(1,:); %TTLs.end=pulses.TTLTimes(2,:);
 pulseDur=pulses.duration; %  min(mode(TTLs.end-TTLs.start));
 IPI=mode(diff(TTLs.start));
 delay=0.005;

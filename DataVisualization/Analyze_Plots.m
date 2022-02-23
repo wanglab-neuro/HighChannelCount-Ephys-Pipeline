@@ -8,14 +8,14 @@ processedDataFiles=cellfun(@(x) contains(x,'processedData'), {dirFiles.name});
 if sum(processedDataFiles)
     load(fullfile(dirFiles(processedDataFiles).folder,dirFiles(processedDataFiles).name));
     if ~isfield(ephys,'traces')
-        traceFile = fopen(dirFiles(cellfun(@(x) contains(x,'traces'),{dirFiles.name})).name, 'r');
+        traceFile = fopen(dirFiles(cellfun(@(x) contains(x,{'traces','.rec.dat'}),{dirFiles.name})).name, 'r');
         ephys.traces = fread(traceFile,[ephys.recInfo.numRecChan,Inf],'single');
         fclose(traceFile);
     end
 end
 
 if ~exist('ephys','var')
-    [ephys,behav,pulses,targetDir]=Analyze_LoadData;
+    [ephys,behav,pulses,trials,targetDir]=Analyze_LoadData;
     cd(targetDir);
        
     if numel(behav.whiskerTrackingData.bestWhisker)>1

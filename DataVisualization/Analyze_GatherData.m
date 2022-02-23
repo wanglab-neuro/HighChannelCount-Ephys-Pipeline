@@ -113,7 +113,8 @@ rotaryencoderFiles = cellfun(@(fileFormat) dir([fullfile(directoryHierarchy{1:en
 
 %% TTL files (other than sync to video, e.g., laser)
 TTLFiles=cellfun(@(fileFormat) dir([startingDir filesep '**' filesep fileFormat]),...
-    {'*TTLOnset.csv','whiskerTrackingData','*trialTS.csv','*trial.mat','*_TTLs.dat'},'UniformOutput', false);
+    {'*TTLOnset.csv','whiskerTrackingData','*trialTS.csv',...
+    '*trial.mat','*_TTLs.dat','*_optoTTLs.dat'},'UniformOutput', false);
 TTLFiles=vertcat(TTLFiles{~cellfun('isempty',TTLFiles)});
 
 %% Video sync data
