@@ -89,7 +89,7 @@ for fileNum=1:size(dataFiles,1)
 
         allRecInfo{fileNum}=recInfo;
     catch
-        continue
+%         continue
     end
     
     %% load other data
@@ -97,15 +97,23 @@ for fileNum=1:size(dataFiles,1)
     if isfield(NEVdata.ElectrodesInfo,'ElectrodeLabel')
         fsIdx=cellfun(@(x) contains(x','FlowSensor'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
         if any(fsIdx)
-            fsData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns4']));
-            fsIdx = cellfun(@(x) contains(x,'FlowSensor'),{fsData.ElectrodesInfo.Label});
-            fsData = fsData.Data(fsIdx,:);
+            try
+                fsData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns4']));
+                fsIdx = cellfun(@(x) contains(x,'FlowSensor'),{fsData.ElectrodesInfo.Label});
+                fsData = fsData.Data(fsIdx,:);
+            catch
+                % empty data
+            end
         end
         reIdx = cellfun(@(x) contains(x','RotaryEncoder'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
         if any(reIdx)
-            reData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns2']));
-            reIdx = cellfun(@(x) contains(x,'RotaryEncoder'),{reData.ElectrodesInfo.Label});
-            reData = reData.Data(reIdx,:);
+            try
+                reData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns2']));
+                reIdx = cellfun(@(x) contains(x,'RotaryEncoder'),{reData.ElectrodesInfo.Label});
+                reData = reData.Data(reIdx,:);
+            catch
+                % empty data
+            end
         end
     end
     vSyncTTLDir=cd;
@@ -239,8 +247,8 @@ for fileNum=1:size(dataFiles,1)
     %% save photostim TTLs 
     if exist('laserTTL','var') && ~isempty(laserTTL) && ~isempty(laserTTL(1).start)
         % discard native sr timestamps and convert to seconds if needed
-        if any([laserTTL.samplingRate]==1)
-            laserTTL=laserTTL([laserTTL.samplingRate]==1);
+        if any(strcmp({laserTTL.timeBase},'s')) %any([laserTTL.samplingRate]==1)
+            laserTTL=laserTTL(strcmp({laserTTL.timeBase},'s'));
         else
             laserTTL=laserTTL([laserTTL.samplingRate]==1000);
             % convert timebase to seconds
@@ -254,13 +262,13 @@ for fileNum=1:size(dataFiles,1)
         end
         
         % save binary file
-        fileID = fopen([recordingName '_TTLs.dat'],'w');
-        fwrite(fileID,laserTTL.start','single'); %laserTTL.end'
+        fileID = fopen([recordingName '_optoTTLs.dat'],'w');
+        fwrite(fileID,[laserTTL.start,laserTTL.end]','single'); %laserTTL.end'
         fclose(fileID);
         %save timestamps in seconds units as .csv
-        dlmwrite([recordingName '_export_trial.csv'],laserTTL.start,...
-            'delimiter', ',', 'precision', '%5.4f');
-        recInfo.export.TTLs={[recordingName '_TTLs.dat'];[recordingName '_trial.csv']}; %[recordingName '_export_trial.mat']};
+        writematrix([laserTTL.start,laserTTL.end],[recordingName '_optoTTLs.csv']); %,...
+%             'delimiter', ','); % 'precision', '%5.4f'
+        recInfo.export.TTLs={[recordingName '_optoTTLs.dat'];[recordingName '_optoTTLs.csv']}; %[recordingName '_export_trial.mat']};
     end
     
     %% or save trial TTLs (to be streamlined)
@@ -272,13 +280,13 @@ for fileNum=1:size(dataFiles,1)
         end
         
         % save binary file
-        fileID = fopen([recordingName '_TTLs.dat'],'w');
+        fileID = fopen([recordingName '_trialTTLs.dat'],'w');
         fwrite(fileID,[trialTTL.start,trialTTL.end]','single'); %trialTTL.end'
         fclose(fileID);
         %save timestamps in seconds units as .csv
-        dlmwrite([recordingName '_export_trial.csv'],[trialTTL.start,trialTTL.end],...
+        dlmwrite([recordingName '_trialTTLs.csv'],[trialTTL.start,trialTTL.end],...
             'delimiter', ',', 'precision', '%5.4f');
-        recInfo.export.TTLs={[recordingName '_TTLs.dat'];[recordingName '_trial.csv']};
+        recInfo.export.TTLs={[recordingName '_trialTTLs.dat'];[recordingName '_trialTTLs.csv']};
     end
     
     %% save video sync TTL data
@@ -286,20 +294,21 @@ for fileNum=1:size(dataFiles,1)
         fileID = fopen([recordingName '_vSyncTTLs.dat'],'w');
         if exist('videoTTL','var') && isfield(videoTTL,'start') && ~isempty(videoTTL(1).start)
             %swap dimensions if necessary
-            if size(videoTTL.start,2)>size(videoTTL.start,1); videoTTL.start=videoTTL.start'; end
-            
-            frameCaptureTime=videoTTL.start;
+            for i = 1:numel(videoTTL)
+                videoTTL(i).start = shiftdim(videoTTL(i).start);
+            end
+            frameCaptureTime = videoTTL(end).start; % analog
             %             frameCaptureTime=[round(TTLtimes(1));round(TTLtimes(1))+cumsum(round(diff(TTLtimes)))]; %exact rounding
         elseif exist('videoTTL','var')
-            frameCaptureTime=videoTTL;
+            frameCaptureTime = videoTTL;
         elseif exist('frameCaptureTime','var') && ~isempty(frameCaptureTime)
             % save video frame time file (vSync TTLs prefered method)
-            frameCaptureTime=frameCaptureTime(1,frameCaptureTime(2,:)<0)';
+            frameCaptureTime = frameCaptureTime(1,frameCaptureTime(2,:)<0)';
             %             frameCaptureTime=[round(frameCaptureTime(1));round(frameCaptureTime(1))+cumsum(round(diff(frameCaptureTime)))];
         end
         fwrite(fileID,frameCaptureTime,'single'); %'int32' %just save one single column
         fclose(fileID);
-        recInfo.export.vSync=[recordingName '_vSyncTTLs.dat'];
+        recInfo.export.vSync = [recordingName '_vSyncTTLs.dat'];
         copyfile([recordingName '_vSyncTTLs.dat'],fullfile(rootDir,[recordingName '_vSyncTTLs.dat']));
     end
     
