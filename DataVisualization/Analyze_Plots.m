@@ -8,7 +8,7 @@ processedDataFiles=cellfun(@(x) contains(x,'processedData'), {dirFiles.name});
 if sum(processedDataFiles)
     load(fullfile(dirFiles(processedDataFiles).folder,dirFiles(processedDataFiles).name));
     if ~isfield(ephys,'traces')
-        traceFile = fopen(dirFiles(cellfun(@(x) contains(x,{'traces','.rec.dat'}),{dirFiles.name})).name, 'r');
+        traceFile = fopen(dirFiles(cellfun(@(x) contains(x,'traces'),{dirFiles.name})).name, 'r');
         ephys.traces = fread(traceFile,[ephys.recInfo.numRecChan,Inf],'single');
         fclose(traceFile);
     end
@@ -122,7 +122,7 @@ switch keepWhat
         % add manually, e.g.,
         % ephys.selectedUnits=[ephys.selectedUnits;54]; 1;2;19];
         % set numbers
-        % ephys.selectedUnits= [11;5;4;14;16;24;26;28][12; 26; 37]; [33; 30; 29; 17; 45; 40; 4; 36; 6; 11; 14];
+        % ephys.selectedUnits= [12;15;7;11];
 end
 
 %% organize selectedUnits by depth
@@ -164,7 +164,7 @@ NBC_Plots_Overview(whiskers(bWhisk),whiskingEpochs,breathing,ephys,pulses.TTLTim
 
 %% Check Phototagging summary
 % ephys.selectedUnits=[60 23]; 10; 2; 37; %12;
-if ~isfield(pulses,'duration'); pulses.duration=0.010; end
+if ~isfield(pulses,'duration'); pulses.duration=0.010; end %for ChRmine pulses.duration=0.1
 PhotoTagPlots(ephys,pulses);
 % PTunits=[12,26,37];
 

@@ -154,7 +154,7 @@ end
 
 %% Load spike data 
 spikeDataFile=cellfun(@(flnm) contains(flnm,'spikes'),allDataFiles);
-sortDir=fullfile(recInfo.dirName(1:end-5),'SpikeSorting',recInfo.baseName,'kilosort3'); %if importing from KS3 directly
+sortDir=fullfile(recInfo.dirName,'SpikeSorting',recInfo.baseName,'kilosort3'); %if importing from KS3 directly
 spikes=LoadSpikeData(allDataFiles{spikeDataFile},[],sortDir);
 % check information
 if isfield(spikes,'samplingRate') 

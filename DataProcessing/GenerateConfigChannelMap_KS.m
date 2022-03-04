@@ -134,15 +134,19 @@ for fileNum=1:size(dataFiles,1)
         
     end
     
-    %move to export folder
+    % define export folder and copy probe file
     exportFolder=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,allRecInfo{fileNum}.recordingName),...
         {dirListing.name},'UniformOutput',false))).name;
+    copyfile(fullfile(cd,probeFileName),fullfile(cd,exportFolder,probeFileName));
+    
+    % move to export folder
     cd(exportFolder);
     probeParams.probeFileName=regexp(probeFileName,'\w+(?=\W)','match','once');
         
     % Generate KS channel map file
     [cmdout,status,chMapFName]=GenerateKSChannelMap(probeParams.probeFileName,...
         cd,probeParams,recInfo.samplingRate);
+    
     if status~=1
         disp('problem generating the channel map file')
     else
