@@ -1,5 +1,22 @@
 classdef EphysFun
     methods(Static)
+        %% Order and remap traces
+        function traces=OrderTraces(traces,numElectrodes,recDuration,channelMap)
+            try
+                traces=reshape(traces,[numElectrodes recDuration]);
+            catch
+                traces=reshape(traces',[recDuration numElectrodes]);
+            end           
+            % remap traces
+            traces=traces(channelMap,:);
+        end
+
+        %% Filter traces
+        function traces=FilterTraces(traces,samplingRate,preprocOption)
+            if nargin<2; samplingRate=30000; end
+            if nargin<3; preprocOption={'CAR','all'}; end
+            traces=PreProcData(traces,samplingRate,preprocOption);
+        end
         
         %% FindBestUnits
         %%%%%%%%%%%%%%%%

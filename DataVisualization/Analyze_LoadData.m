@@ -1,9 +1,9 @@
 function [ephys,behav,pulses,trials,targetDir]=Analyze_LoadData
-% Loads data for analysis of correlation between bursts/spike rate 
+% Loads data for analysis of correlation between bursts/spike rate
 % and periodic behaviors (whisking, breathing)
 %% Directory structure assumed to be:
 % > Recording session   (may contain "raw" data)
-%     > Spike Sorting Folder 
+%     > Spike Sorting Folder
 %         > Recording #1
 %         > Recording #2
 %         ...
@@ -25,7 +25,7 @@ if ~strcmp(currentfolder,'Analysis') &&...
     cd(targetDir) %fullfile(directoryHierarchy{1:end-1},'Analysis'))
 else
     targetDir=cd;
-    % load all files in current directory 
+    % load all files in current directory
     allDataFiles=dirListing([dirListing.isdir]==0);
     allDataFiles={allDataFiles.name}';
 end
@@ -90,7 +90,7 @@ if any(probeFile)
 end
 
 if isfield(recInfo,'exportedChan');    numElectrodes=numel(recInfo.exportedChan);
-elseif isfield(recInfo,'numRecChan');    numElectrodes=recInfo.numRecChan; 
+elseif isfield(recInfo,'numRecChan');    numElectrodes=recInfo.numRecChan;
 else
     prompt = {'Enter the number of recorded channels'};
     dlg_title = 'Channel number'; num_lines = 1; defaultans = {'32'};
@@ -98,13 +98,13 @@ else
 end
 if numElectrodes==35; numElectrodes=32; end %Disregard eventual AUX channels
 
-if ~isfield(recInfo,'channelMap') 
+if ~isfield(recInfo,'channelMap')
     disp({'missing channelMap' ; 'delete old probe files then reexport data'})
     return
-% 
-%     disp(mfilename('fullpath'));
-%     disp('assuming channels have been remapped already')
-%     recInfo.channelMap = 1:numElectrodes;
+    %
+    %     disp(mfilename('fullpath'));
+    %     disp('assuming channels have been remapped already')
+    %     recInfo.channelMap = 1:numElectrodes;
 end
 
 %% define sampling rate
@@ -115,49 +115,38 @@ else
     dlg_title = 'Define sampling rate'; num_lines = 1; defaultans = {'30000'};
     samplingRate = str2double(cell2mat(inputdlg(prompt,dlg_title,num_lines,defaultans)));
 end
-    
-%% Load recording traces
-if false % too heavy for long recordings
-    recDataFile=cellfun(@(flnm) contains(flnm,'rec.'),allDataFiles);
-    traces = memmapfile(allDataFiles{recDataFile},'Format','int16');
-    allTraces=double(traces.Data);
-    recDuration=int64(length(allTraces)/numElectrodes);
-    try
-        allTraces=reshape(allTraces,[numElectrodes recDuration]);
-    catch
-        allTraces=reshape(allTraces',[recDuration numElectrodes]);
-    end
-    %   %alternatively (equivalent):
-    %     traceFile = fopen(allDataFiles{recDataFile}, 'r');
-    %     allTraces = fread(traceFile,[numElectrodes,Inf],'int16');
-    %     fclose(traceFile);
-    
-    % remap traces
-    allTraces=allTraces(recInfo.channelMap,:);
-    
 
+%% Load recording traces
+recDataFile=cellfun(@(flnm) contains(flnm,'rec.'),allDataFiles);
+traces = fileDatastore(allDataFiles{recDataFile},'ReadFcn',@ReadRecTraces,...
+    'FileExtensions',{'.bin','.dat'});
+if false % don't if too heavy
+    %     traces = memmapfile(allDataFiles{recDataFile},'Format','int16');
+    %     allTraces=double(traces.Data);
+    %   %% alternatively (equivalent):
+    %   %  traceFile = fopen(allDataFiles{recDataFile}, 'r');
+    %   %  allTraces = fread(traceFile,[numElectrodes,Inf],'int16');
+    %   %  fclose(traceFile);
     
-    filterTraces=true; %Might change that in case traces have already been filtered
-    %% Filter traces if needed
-    if filterTraces == true
-        preprocOption={'CAR','all'};
-        allTraces=PreProcData(allTraces,samplingRate,preprocOption);
-        % allTraces=FilterTrace(allTraces,samplingRate);
+    %     allTraces= tall(traces);
+    allTraces = read(traces);
+    recDuration = recInfo.dataPoints; %int64(length(allTraces)/numElectrodes); 
+    allTraces=EphysFun.OrderTraces(allTraces,numElectrodes,recDuration,recInfo.channelMap);
+    allTraces=EphysFun.FilterTraces(allTraces,samplingRate);
+    figure; hold on;
+    for chNum= 23:24
+        plot(allTraces(chNum,1:600000)+(chNum-1)*max(max(allTraces(:,1:600000)))*2,'k')
     end
-% figure; hold on;
-% for chNum=1:16
-%     plot(allTraces(chNum,1:6000)+(chNum-1)*max(max(allTraces(:,1:6000)))*2,'k')
-% end
 else
     allTraces=[];
 end
 
-%% Load spike data 
+%% Load spike data
 spikeDataFile=cellfun(@(flnm) contains(flnm,'spikes'),allDataFiles);
 sortDir=fullfile(recInfo.dirName,'SpikeSorting',recInfo.baseName,'kilosort3'); %if importing from KS3 directly
 spikes=LoadSpikeData(allDataFiles{spikeDataFile},[],sortDir);
 % check information
-if isfield(spikes,'samplingRate') 
+if isfield(spikes,'samplingRate')
     if isempty(spikes.samplingRate)
         spikes.samplingRate=samplingRate;
     elseif spikes.samplingRate ~= samplingRate
@@ -167,15 +156,15 @@ if isfield(spikes,'samplingRate')
     end
 end
 
-%% waveforms 
+%% waveforms
 wfDataFile=cellfun(@(flnm) contains(flnm,'_wF'),allDataFiles);
-if any(wfDataFile) 
+if any(wfDataFile)
     load(allDataFiles{wfDataFile});
-% figure;
-% hold on 
-% plot(mean(waveForms(3).spikesFilt(:,2,:),3))
-% plot(mean(spikes.waveforms(spikes.unitID==3,:)))
-spikes.wF=waveForms;
+    % figure;
+    % hold on
+    % plot(mean(waveForms(3).spikesFilt(:,2,:),3))
+    % plot(mean(spikes.waveforms(spikes.unitID==3,:)))
+    spikes.wF=waveForms;
 end
 
 %% Add voltage scaling factor
@@ -196,7 +185,7 @@ else
     startTime=0; %well, make sure time indices are properly aligned
 end
 
-%% Read video frame times 
+%% Read video frame times
 videoFrameTimeFile=cellfun(@(flnm) contains(flnm,'vSyncTTLs'),allDataFiles);
 if any(videoFrameTimeFile)
     syncFile = fopen(allDataFiles{videoFrameTimeFile}, 'r');
@@ -208,7 +197,7 @@ else % csv file from Bonsai
 end
 % remove recording start clock time
 vidTimes=vFrameTimes-startTime;
-if spikes.times(end) > size(allTraces,2)
+if spikes.times(end) > recInfo.dataPoints %size(allTraces,2)
     spikes.times=spikes.times-startTime;
 end
 
@@ -216,33 +205,33 @@ end
 TTLFile=cellfun(@(flnm) contains(flnm,{'_TTLs','_trialTTLs','_optoTTLs'}),allDataFiles);
 if any(TTLFile)
     pulseFile = fopen(allDataFiles{TTLFile}, 'r');
-%     TTLTimes = fread(pulseFile,'single'); % files recorded with only
-%     rising phase of TTL (<2021) 
-    TTLTimes = fread(pulseFile,[2,Inf],'single'); % 
+    %     TTLTimes = fread(pulseFile,'single'); % files recorded with only
+    %     rising phase of TTL (<2021)
+    TTLTimes = fread(pulseFile,[2,Inf],'single'); %
     fclose(pulseFile);
 else
     TTLTimes=[];
 end
-if spikes.times(end) > size(allTraces,2)
+if spikes.times(end) > recInfo.dataPoints %size(allTraces,2)
     TTLTimes=TTLTimes-startTime;
 end
 
 %% Import whisker tracking data
 if ~any(cellfun(@(flnm) contains(flnm,'wMeasurements'),allDataFiles))
-        % run ConvertWhiskerData to get those files. Should already be
-        % done at this point, though.
-%         ConvertWhiskerData;
-%         dirListing=dir(startingDir);
+    % run ConvertWhiskerData to get those files. Should already be
+    % done at this point, though.
+    %         ConvertWhiskerData;
+    %         dirListing=dir(startingDir);
 end
 whiskerTrackingFiles=cellfun(@(flnm) contains(flnm,'wMeasurements'),allDataFiles);
 if any(whiskerTrackingFiles)
-        whiskerTrackingData=load(allDataFiles{whiskerTrackingFiles});
-%     whiskerTrackingData=load(dirListing(cellfun(@(flnm) contains(flnm,'wMeasurements'),...
-%         {dirListing.name})).name);
-%     whiskerTrackingData.velocity=load(dirListing(cellfun(@(flnm) contains(flnm,'whiskervelocity'),...
-%         {dirListing.name})).name);
-%     whiskerTrackingData.phase=load(dirListing(cellfun(@(flnm) contains(flnm,'whiskerphase'),...
-%         {dirListing.name})).name);
+    whiskerTrackingData=load(allDataFiles{whiskerTrackingFiles});
+    %     whiskerTrackingData=load(dirListing(cellfun(@(flnm) contains(flnm,'wMeasurements'),...
+    %         {dirListing.name})).name);
+    %     whiskerTrackingData.velocity=load(dirListing(cellfun(@(flnm) contains(flnm,'whiskervelocity'),...
+    %         {dirListing.name})).name);
+    %     whiskerTrackingData.phase=load(dirListing(cellfun(@(flnm) contains(flnm,'whiskerphase'),...
+    %         {dirListing.name})).name);
 else
     whiskerTrackingData=[];
 end
@@ -287,7 +276,7 @@ else
     trials=[];
 end
 
-%% Data integrity checks 
+%% Data integrity checks
 % Check video frame num vs TTLs if difference seems too big here
 % if isfield(recInfo,'export')
 %     videoSyncFile=fullfile(recInfo.export.directory,recInfo.export.vSync);
@@ -317,14 +306,14 @@ end
 
 % Adjust frame times to frame number
 try
-[whiskerTrackingData,vidTimes]=AdjustFrameNumFrameTimes(whiskerTrackingData,...
-    vidTimes,whiskerTrackingData.samplingRate);
+    [whiskerTrackingData,vidTimes]=AdjustFrameNumFrameTimes(whiskerTrackingData,...
+        vidTimes,whiskerTrackingData.samplingRate);
 catch
     disp('whisker tracking data incorrect or missing')
     whiskerTrackingData.whiskers=[];
     whiskerTrackingData.samplingRate=[];
 end
-    
+
 % keep info about video time window
 recInfo.vTimeLimits = [vidTimes(1) vidTimes(end)];
 
@@ -335,14 +324,14 @@ if syncCut
     allTraces=allTraces(:,int32(vidTimes(1)*recInfo.SRratio:vidTimes(end)*recInfo.SRratio));
     % Same for spikes
     spikeReIndex=spikes.times>=vidTimes(1)*recInfo.SRratio &...
-                 spikes.times<=vidTimes(end)*recInfo.SRratio;
+        spikes.times<=vidTimes(end)*recInfo.SRratio;
     spkFld=fieldnames(spikes);
     for spkFldNum=1:numel(spkFld)
         try spikes.(spkFld{spkFldNum})=spikes.(spkFld{spkFldNum})(spikeReIndex,:,:);catch; end
     end %was spikeReIndex,:
     %same for TTLs (in s resolution)
     TTLReIndex=TTLTimes(1,:)>=vidTimes(1) &...
-                TTLTimes(1,:)<=vidTimes(end);
+        TTLTimes(1,:)<=vidTimes(end);
     TTLTimes=TTLTimes(:,TTLReIndex);
     % re-set spike times. TTLs and video frame times
     spikes.times=int32(spikes.times)-vidTimes(1)*recInfo.SRratio; % spikes.times become uint32 when loaded from _spike file
@@ -355,7 +344,7 @@ spikes.times = single(spikes.times)/spikes.samplingRate;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %% group data in structure
-ephys=struct('traces',allTraces,'spikes',spikes,'recInfo',recInfo);
+ephys=struct('traces',traces,'spikes',spikes,'recInfo',recInfo); %allTraces
 behav=struct('whiskers',whiskerTrackingData.whiskers,...
     'whiskerTrackingData',rmfield(whiskerTrackingData,'whiskers'),'vidTimes',vidTimes,...
     'breathing',fsData,'wheel',reData);
@@ -366,7 +355,7 @@ cd(startingDir);
 end
 %% sanity check plots
 % %do plot pre and post sync
-% figure; hold on 
+% figure; hold on
 % timeLine=0:size(allTraces,2)/recInfo.SRratio;
 % % plot ephys trace
 % plot(timeLine,allTraces(1,1:recInfo.SRratio:numel(timeLine)*recInfo.SRratio))
@@ -383,7 +372,11 @@ end
 % plot(timeLine,wAngle(1:numel(timeLine)));
 
 
-
+function traces = ReadRecTraces(fileName)
+fid = fopen(fileName,'r');
+traces=fread(fid,'int16');
+fclose(fid);
+end
 
 
 

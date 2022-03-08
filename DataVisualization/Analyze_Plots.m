@@ -5,19 +5,39 @@ clearvars;
 %% First, get data
 dirFiles=dir;
 processedDataFiles=cellfun(@(x) contains(x,'processedData'), {dirFiles.name});
-if sum(processedDataFiles)
+if any(processedDataFiles)
     load(fullfile(dirFiles(processedDataFiles).folder,dirFiles(processedDataFiles).name));
     if ~isfield(ephys,'traces')
-        traceFile = fopen(dirFiles(cellfun(@(x) contains(x,'traces'),{dirFiles.name})).name, 'r');
-        ephys.traces = fread(traceFile,[ephys.recInfo.numRecChan,Inf],'single');
-        fclose(traceFile);
+        ephys.traces = fileDatastore(dirFiles(cellfun(@(x) contains(x,'traces'),{dirFiles.name})).name,...
+            'ReadFcn',@ReadRecTraces, 'FileExtensions',{'.bin','.dat'});
+        %         traceFile = fopen(dirFiles(cellfun(@(x) contains(x,'traces'),{dirFiles.name})).name, 'r');
+        %         ephys.traces = fread(traceFile,[ephys.recInfo.numRecChan,Inf],'single');
+        %         fclose(traceFile);
+    end
+    %% if needed, load traces and save file here
+    if ~exist('traces','var')
+        traces=ephys.traces; varInfo=whos('traces');
+        switch varInfo.class
+            case 'matlab.io.datastore.FileDatastore' % datastore
+                traces = read(traces);
+            case 'memmapfile'
+                traces = double(traces.Data); %memory map
+        end
+        traces=EphysFun.OrderTraces(traces, ephys.recInfo.numRecChan,...
+            ephys.recInfo.dataPoints, ephys.recInfo.channelMap);
+        traces=EphysFun.FilterTraces(traces,ephys.recInfo.samplingRate);
+        save(fullfile(dirFiles(processedDataFiles).folder,dirFiles(processedDataFiles).name),...
+            'traces','-append')
+    else
+        ephys.traces=traces;
+        clearvars('traces');
     end
 end
 
 if ~exist('ephys','var')
     [ephys,behav,pulses,trials,targetDir]=Analyze_LoadData;
     cd(targetDir);
-       
+    
     if numel(behav.whiskerTrackingData.bestWhisker)>1
         behav.whiskerTrackingData.bestWhisker=behav.whiskerTrackingData.bestWhisker(1);
     end
@@ -180,7 +200,7 @@ wEpochMask.ephys(ephysMaskIdx)=wEpochMask.behav;
 
 %% Phase tuning - Individual plots
 phaseTuning=NBC_Plots_PhaseTuning(whiskers(bWhisk).angle,whiskers(bWhisk).phase,...
-    ephys,wEpochMask,'whisking',true,false); %whiskingEpochs_m %ephys.spikeRate
+    ephys,wEpochMask,'whisking',false,false); %whiskingEpochs_m %ephys.spikeRate
 
 % Set point phase tuning
 setpointPhase=WhiskingFun.ComputePhase(whiskers(bWhisk).setPoint,1000,[],'setpoint');
