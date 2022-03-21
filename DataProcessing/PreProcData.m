@@ -1,12 +1,12 @@
 function [data,channelSelection]=PreProcData(data,samplingRate,filterOption)
 
-% channel string
-chStr= num2str(linspace(1,size(data,1),size(data,1))');
-channelSelection=[];
-%adjust dialogs position
-defaultFigPos=get(0, 'defaultfigureposition');
-diagPos=[1631 437 defaultFigPos(3:4)];
-set(0,'defaultfigureposition',diagPos);
+% % channel string
+% chStr= num2str(linspace(1,size(data,1),size(data,1))');
+% channelSelection=[];
+% %adjust dialogs position
+% defaultFigPos=get(0, 'defaultfigureposition');
+% diagPos=[1631 437 defaultFigPos(3:4)];
+% set(0,'defaultfigureposition',diagPos);
 
 if ~isa(data,'double') & ~strcmp(filterOption{1},'nopp')
     data=double(data);
@@ -61,7 +61,7 @@ elseif strcmp(filterOption{1},'highpass')
     disp(['highpass done in ' num2str(toc) 'seconds']);
 elseif strcmp(filterOption{1},'bandpass')
     %% butterworth high-pass
-     if size(filterOption,2)==2
+     if size(filterOption,2)==1
         promptFields={'Enter highpass value','Enter lowpass value'};
         promptName='Butterworth IIR filter parameters';
         promptNumlines=1;
@@ -69,7 +69,7 @@ elseif strcmp(filterOption{1},'bandpass')
         filtValues=inputdlg(promptFields,promptName,promptNumlines,promptDefaultanswer);
         filtHP=str2double(filtValues{1});
         filtLP=str2double(filtValues{2});
-     elseif size(filterOption,2)==3
+     elseif size(filterOption,2)==2
          filtHP=filterOption{2}(1);
          filtLP=filterOption{2}(2);
      else
@@ -372,5 +372,5 @@ elseif  strcmp(filterOption{1},'CAR_subset')
         repmat(median(data(channelSelection,:),1),[size(data(channelSelection,:),1),1]));%./mad(faa,1);
 end
 
-set(0,'defaultfigureposition', defaultFigPos);
+% set(0,'defaultfigureposition', defaultFigPos);
 end

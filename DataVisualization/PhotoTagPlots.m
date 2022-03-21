@@ -92,6 +92,14 @@ for cellNum=1:size(ephysData.selectedUnits,1)
             keepTrace=mode(prefElec);
         end
         traceExcerpt.data=ephysData.traces(keepTrace,excerptWindow);
+        
+        % get exported trace
+        % see V:\Code\Souris\Spike2_Export.m
+        traceFile = fopen('vIRt57_0216_5732_27.bin', 'r'); % vIRt61_0302_5631_30.bin vIRt61_0302_5926_3.bin
+        ephysData.data =fread(traceFile,[1,Inf],'int16');
+    	fclose(traceFile);
+        traceExcerpt.data=ephysData.data(1,excerptWindow);
+        
         %         end
         %         figure; plot(traceExcerpt.data)
         %         figure; plot(ephysData.traces(keepTrace,:))

@@ -6,15 +6,17 @@ function [wtData,vidTimes]=AdjustFrameNumFrameTimes(wtData,vidTimes,unitBase)
 % video recording file, with the camera's last TTLs being recorded by the
 % ephys acquisition system, but the corresponding frames not recorded in
 % the video file. Adjust behavior data accordingly
-if isfield(wtData.whiskers,'Angle')
-    if ~isstruct(wtData.whiskers(1).Angle)
-        behavTraceLength=numel(wtData.whiskers(1).Angle);
+
+wtFld=fieldnames(wtData.whiskers);
+if any(contains(wtFld,{'Angle','angle'}))
+    fldName=wtFld(find(contains(wtFld,{'Angle','angle'}),1));
+    if ~isstruct(wtData.whiskers(1).(fldName{:}))
+        behavTraceLength=numel(wtData.whiskers(1).(fldName{:}));
     else
-        wtFld=fieldnames(wtData.whiskers(1).Angle);
-        behavTraceLength=numel(wtData.whiskers(1).Angle.(wtFld{1})); %Assuming trace is first field here
+        wtFld=fieldnames(wtData.whiskers(1).(fldName{:}));
+        behavTraceLength=numel(wtData.whiskers(1).(fldName{:}).(wtFld{1})); %Assuming trace is first field here
     end
 else
-    wtFld=fieldnames(wtData.whiskers);
     behavTraceLength=numel(wtData.whiskers(1).(wtFld{1}));
 end
 frameNumDiff= behavTraceLength-(numel(vidTimes)*mode(diff(vidTimes))*unitBase);

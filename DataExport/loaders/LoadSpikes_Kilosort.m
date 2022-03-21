@@ -48,7 +48,7 @@ function spikes=LoadSpikes_Kilosort(fileName,sortDir)
             end
     end
     spikes.waveforms=[];
-    spikes.samplingRate=30000;
+    [spikes.samplingRate,spikes.timebase]=deal(30000);
     [spikes.times,timeIdx]=sort(spikes.times);
     spikes.unitID=spikes.unitID(timeIdx);
     if isfield(spikes,'preferredElectrode')

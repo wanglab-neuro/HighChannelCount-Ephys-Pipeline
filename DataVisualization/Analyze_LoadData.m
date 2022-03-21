@@ -340,7 +340,7 @@ if syncCut
 end
 
 %% convert spike times to seconds
-spikes.times = single(spikes.times)/spikes.samplingRate;
+spikes.times = single(spikes.times)/spikes.timebase;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %% group data in structure

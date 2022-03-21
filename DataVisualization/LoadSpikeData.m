@@ -1,26 +1,37 @@
-function spikes=LoadSpikeData(argin_fName,traces,sortDir)
+function spikes=LoadSpikeData(fName,traces,sortDir)
 
-%% Kilosort
-if contains(argin_fName,'rez.mat') || contains(argin_fName,'_KS') ||...
-        contains(argin_fName,'spikes.npy') 
-    spikes=LoadSpikes_Kilosort(argin_fName,sortDir);
-
-%% from JRClust
-elseif contains(argin_fName,'.csv') || ...
-        contains(argin_fName,'_jrc') || ...
-        contains(argin_fName,'_res') 
-    spikes=LoadSpikes_JRClust(argin_fName,traces);
-
-%% TBSI format
-elseif logical(regexp(argin_fName,'Ch\d+.'))  
-    spikes=LoadSpikes_TBSI(argin_fName);
-
-%% Spyking Circus
-elseif contains(argin_fName,'.hdf5')
-    spikes=LoadSpikes_SpykingCircus(argin_fName);   
+try
     
-%% Matlab processing / export
-elseif contains(argin_fName,'.mat') 
-    spikes=LoadSpikes_Matlab(argin_fName);
+    %% Kilosort
+    if contains(fName,'rez.mat') || contains(fName,'_KS') ||...
+            contains(fName,'spikes.npy')
+        spikes=LoadSpikes_Kilosort(fName,sortDir);
+        
+    %% JRClust
+    elseif contains(fName,'.csv') || ...
+            contains(fName,'_jrc') || ...
+            contains(fName,'_res')
+        spikes=LoadSpikes_JRClust(fName,traces);
+        
+    elseif logical(regexp(fName,'Ch\d+.'))
+    %% TBSI 
+        [~,~,fileExt]=fileparts(fName);
+        if contains(fileExt,'.hdf5')
+            spikes=LoadSpikes_TBSI(fName);
+        else
+    %% Spike2
+            spikes=LoadSpikes_Spike2(fName);
+        end        
+    %% Spyking Circus
+    elseif contains(fName,'.hdf5')
+        spikes=LoadSpikes_SpykingCircus(fName);
+        
+    %% Matlab processing / export
+    elseif contains(fName,'.mat')
+        spikes=LoadSpikes_Matlab(fName);
+        
+    end
     
+catch %already extracted
+    load(fName);
 end
