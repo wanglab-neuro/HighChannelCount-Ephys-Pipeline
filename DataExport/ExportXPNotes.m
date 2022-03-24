@@ -230,7 +230,7 @@ if exist('sessions','var')
     for fileNum=1:size(sessions,2)
         fileIdx=cellfun(@(fileName) strcmp(fileName,sessions(fileNum).baseName), fileList);
         if ~any(fileIdx)
-                fileIdx=cellfun(@(fileName) contains(fileName,sessions(fileNum).baseName), fileList);
+                fileIdx=cellfun(@(fileName) contains(fileName,sessions(fileNum).baseName,'IgnoreCase',true), fileList);
                 if ~any(fileIdx)
                     disp(['File ' sessions(fileNum).baseName ' could not be located']);
                 else
