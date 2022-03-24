@@ -4,7 +4,11 @@ function GenerateConfigChannelMap_KS
 if ~exist('dataFiles','var'); load('fileInfo.mat'); end
 % open batch file to save generated parameter files' name and directory
 % assuming the parent folder is the container for all files from that subject
-parentDir=regexp(cd,['(?<=\' filesep ').+?(?=\' filesep ')'],'match');
+curDir=cd; 
+tempDir=regexp(curDir,['\' filesep]);
+tempDir=fullfile(curDir(1:tempDir(1)),'Temp');
+if ~exist(tempDir,'dir'); mkdir(tempDir); end
+parentDir=regexp(curDir,['(?<=\' filesep ').+?(?=\' filesep ')'],'match');
 parentDir = parentDir{end};
 batchFileID = fopen([parentDir '.batch'],'w');
 % loop through all session's recordings
@@ -15,7 +19,7 @@ for fileNum=1:size(dataFiles,1)
     
     %% create ChannelMap file for KiloSort
     % load probe file
-    dirListing = dir(cd);
+    dirListing = dir(curDir);
     %     exportFolder=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,allRecInfo{fileNum}.recordingName),...
     %         {dirListing.name},'UniformOutput',false))).name;
     try
@@ -27,7 +31,7 @@ for fileNum=1:size(dataFiles,1)
         filePath = regexp(filePath,['.+(?=\' filesep '.+\' filesep '.+$)'],'match','once'); %removes filename
         [probeFileName,probePathName] = uigetfile('*.json','Select the probe file',...
             fullfile(filePath,'DataExport', 'probemaps'));
-        copyfile(fullfile(probePathName,probeFileName),fullfile(cd,probeFileName));
+        copyfile(fullfile(probePathName,probeFileName),fullfile(curDir,probeFileName));
     end
     if contains(probeFileName,'.json') %|| contains(probeFileName,'.prb')
         probeLayout = fileread(probeFileName);
@@ -84,7 +88,7 @@ for fileNum=1:size(dataFiles,1)
             if  numel(probeParams.chanMap)==probeParams.numChannels
                 %fine, just need adjusting channel numbers
                 [~,probeParams.chanMap]=sort(probeParams.chanMap);
-                [~,probeParams.chanMap]=sort(probeParams.chanMap);                
+                [~,probeParams.chanMap]=sort(probeParams.chanMap);
             else
                 disp('There''s an issue with the channel map')
             end
@@ -137,12 +141,12 @@ for fileNum=1:size(dataFiles,1)
     % define export folder and copy probe file
     exportFolder=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,allRecInfo{fileNum}.recordingName),...
         {dirListing.name},'UniformOutput',false))).name;
-    copyfile(fullfile(cd,probeFileName),fullfile(cd,exportFolder,probeFileName));
+    copyfile(fullfile(curDir,probeFileName),fullfile(curDir,exportFolder,probeFileName));
     
     % move to export folder
     cd(exportFolder);
     probeParams.probeFileName=regexp(probeFileName,'\w+(?=\W)','match','once');
-        
+    
     % Generate KS channel map file
     [cmdout,status,chMapFName]=GenerateKSChannelMap(probeParams.probeFileName,...
         cd,probeParams,recInfo.samplingRate);
@@ -157,7 +161,7 @@ for fileNum=1:size(dataFiles,1)
         userParams.fs = recInfo.samplingRate;           % sample rate
         userParams.useGPU = true;                       % has to be true in KS2
         userParams.exportDir = cd;
-        userParams.tempDir = 'V:\Temp';
+        userParams.tempDir = tempDir;
         userParams.fproc   = fullfile(userParams.tempDir, [recInfo.recordingName '_export.dat']); % proc file on a fast SSD
         userParams.fbinary = fullfile(userParams.exportDir, [recInfo.recordingName '_export.bin']);
         userParams.NchanTOT = numel(probeParams.chanMap);
@@ -168,7 +172,7 @@ for fileNum=1:size(dataFiles,1)
         
         %% save KS config file name to batch list
         fprintf(batchFileID,'%s\r',fullfile(cd,configFName));
-          
+        
     end
     % go back to root dir
     cd ..

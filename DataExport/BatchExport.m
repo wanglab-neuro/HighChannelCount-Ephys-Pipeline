@@ -51,7 +51,7 @@ else
         notes=jsondecode(fileread(notesFile));
         if isfield(notes,'Sessions')
         % get probe info
-        sessionIdx=contains({notes.Sessions.baseName}, sessionsFolder);
+        sessionIdx=contains({notes.Sessions.baseName}, sessionsFolder,'IgnoreCase',true);
         probe=notes.Sessions(find(sessionIdx,1)).probe;
         %load probe list
         probeList = fileread(fullfile(probePathName, 'probeList.json'));

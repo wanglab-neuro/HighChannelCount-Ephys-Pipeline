@@ -12,15 +12,16 @@ if length(fName)>=48 %too long, will exceed 63 character limit
 end
 
 configFName=[fName '_KSconfigFile.m'];
-try
-    KS3dir='V:\Code\SpikeSorting\Kilosort3';
-    copyfile(fullfile(KS3dir,'configFiles','StandardConfig_MOVEME.m'),...
-        fullfile(fDir,configFName));
-catch
-    KS3dir='D:\Code\SpikeSorting\Kilosort3';
-    copyfile(fullfile(KS3dir,'configFiles','StandardConfig_MOVEME.m'),...
-        fullfile(fDir,configFName));
-end
+
+%Find KS directory. Assumes it's somewhere down a "Code" directory. 
+%If not, just add a failsafe to fallback to root directory. 
+codePath=mfilename('fullpath');
+codePath=codePath(1:regexp(codePath,'Code')+4);
+KS3dir=dir([codePath '**' filesep 'main_kilosort3*']);
+KS3dir=KS3dir.folder;
+% copy configuration file
+copyfile(fullfile(KS3dir,'configFiles','StandardConfig_MOVEME.m'),...
+    fullfile(fDir,configFName));
 
 %% read parameters and delete file
 fileID  = fopen(fullfile(fDir,configFName),'r');
