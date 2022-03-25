@@ -193,6 +193,9 @@ opt.saveFig=false;
 opt.xpType='GFE3'; %'asymmetry' %'default'
 NBC_Plots_Overview(whiskers(bWhisk),whiskingEpochs,breathing,ephys,pulses.TTLTimes,opt);
 
+opt.chNum=23;
+NBC_WhiskerEphysTraces(whiskers,ephys,opt);
+
 %% Check Phototagging summary
 % ephys.selectedUnits=[60 23]; 10; 2; 37; %12;
 if ~isfield(pulses,'duration'); pulses.duration=0.010; end %for ChRmine pulses.duration=0.1
