@@ -48,6 +48,7 @@ end
 % bWhisk=behav.whiskerTrackingData.keepWhiskerIDs==behav.whiskerTrackingData.bestWhisker; %best whisker
 whiskers=behav.whiskers;
 bWhisk=find([whiskers.bestWhisker]);
+% figure; hold on; (plot(whiskers(5).angle))
 
 %% compute whisking frequency (different from instantaneous frequency
 for wNum=1:numel(bWhisk)
@@ -190,10 +191,10 @@ end
 %% Overview plot
 opt.zoomin=false;
 opt.saveFig=false;
-opt.xpType='GFE3'; %'asymmetry' %'default'
+opt.xpType='default'; %'GFE3'; %'asymmetry' %'default'
 NBC_Plots_Overview(whiskers(bWhisk),whiskingEpochs,breathing,ephys,pulses.TTLTimes,opt);
 
-opt.chNum=23;
+opt.chNum=11;
 NBC_WhiskerEphysTraces(whiskers,ephys,opt);
 
 %% Check Phototagging summary
