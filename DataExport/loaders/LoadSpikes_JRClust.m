@@ -1,22 +1,25 @@
 function spikes=LoadSpikes_JRClust(fileName,traces)
 
+spikes=struct('unitID', [], 'times', [], 'preferredElectrode', [],...
+    'bitResolution', [], 'samplingRate', [], 'timebase', [],...
+    'waveforms', [],'templatesIdx', [], 'templates', []);
+
 try % JRC v3 and v4:
     load(fileName,'spikeTimes','spikeSites','spikeClusters','filtShape')
-
+    
     %                 evtWindow = [-0.25, 0.75]; %evtWindowRaw = [-0.5, 1.5]; nSiteDir = 4;
     %                 waveformsFid=fopen('vIRt32_2019_04_24_16_48_53_5185_1_1_export_filt.jrc');
     %                 waveforms=fread(waveformsFid,...
     %                     [sum(abs(evtWindow))*30,nSiteDir,size(spikeClusters,1)],'int16');
     %                 fclose(waveformsFid);
     %                 figure; plot(mean(waveforms(1:4:120,spikeClusters==4)'))
+    
+    
     spikes.unitID=spikeClusters;
     spikes.times=spikeTimes;
     spikes.preferredElectrode=spikeSites; %Site with the peak spike amplitude %cviSpk_site Cell of the spike indices per site
-
+    
     recInfofile=[regexp(fileName,'\w+(?=export_res)','match','once') 'recInfo.mat'];
-    spikes=struct('unitID', [], 'times', [], 'preferredElectrode', [],...
-        'bitResolution', [], 'samplingRate', [], 'timebase', [],...
-        'waveforms', [],'templatesIdx', [], 'templates', []);
     if exist(fullfile(cd,recInfofile),'file')
         load(recInfofile);
         spikes.bitResolution=recInfo.bitResolution;
@@ -28,7 +31,7 @@ try % JRC v3 and v4:
             %         hCfg = jrclust.Config(fullfile(exportDirListing(paramFileIdx).folder,...
             %             exportDirListing(paramFileIdx).name));
             %         siteNeighbors=hCfg.siteNeighbors;
-
+            
             % get filtered waveforms
             filtWFfileIdx=cellfun(@(fName) contains(fName,'_filt.jrc'),...
                 {exportDirListing.name});
@@ -45,7 +48,7 @@ catch
         % v2 updated structure:
         load(fileName,'miClu_log','P','S_clu','dimm_spk',...
             'viSite_spk','viTime_spk');%'cviSpk_site'
-
+        
         spikes.unitID=S_clu.viClu;
         spikes.times=viTime_spk;
         spikes.preferredElectrode=viSite_spk; %Site with the peak spike amplitude %cviSpk_site Cell of the spike indices per site
@@ -54,11 +57,11 @@ catch
         spikes.waveforms=[];
         spikes.bitResolution=P.uV_per_bit;
         spikes.samplingRate=P.sRateHz;
-
+        
     catch
         % old structure
         load(fileName,'S_clu','spikeTimes','spikeSites','P');
-
+        
         spikes.unitID=S_clu.spikeClusters;
         spikes.times=spikeTimes;
         spikes.preferredElectrode=spikeSites;
@@ -67,7 +70,7 @@ catch
         spikes.waveforms=S_clu.tmrWav_spk_clu; %mean waveform
         spikes.bitResolution=P.uV_per_bit;
         spikes.samplingRate=P.sampleRateHz;
-
+        
         % get filtered waveforms
         dirListing=dir;
         spikeWaveFormsFile=cellfun(@(x) strfind(x,'_spkwav'),...
