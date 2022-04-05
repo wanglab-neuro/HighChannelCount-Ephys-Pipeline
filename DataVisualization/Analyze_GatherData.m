@@ -38,7 +38,8 @@ directoryHierarchy=regexp(startingDir,['\S+?(?=\' filesep ')'],'match');
 
 %% Spikes data file
 spikeSortingFiles = cellfun(@(fileFormat) dir([startingDir filesep '**' filesep fileFormat]),...
-    {'*_spikes.mat','spike_times.npy','*.result.hdf5','*_rez.mat','*_res.mat','*_jrc.mat','*_spikesResorted.mat'},'UniformOutput', false);
+    {'*_spikes.mat','spike_times.npy','*.result.hdf5','*_rez.mat','*_res.mat',...
+    '*_jrc.mat','*_spikesResorted.mat','*_Ch*.mat'},'UniformOutput', false);
 spikeSortingFiles=vertcat(spikeSortingFiles{~cellfun('isempty',spikeSortingFiles)});
 % do not include those files:
 spikeSortingFiles=spikeSortingFiles(~cellfun(@(flnm) contains(flnm,{'DeepCut','Whisker','Frame','trial'}),...
