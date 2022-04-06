@@ -15,28 +15,32 @@ for cellNum=1:length(keepCell)
 %     figure; hold on; plot(times,ones(length(times),1),'*');...
 %     plot(TTLtimes,ones(length(TTLtimes),1),'d')
     for TTLNum=1:length(TTLtimes)
-        pulseIdx(:,TTLNum)=times>=TTLtimes(TTLNum) & times<=TTLtimes(TTLNum)+max([duration 0.010]); %keep min window of 10ms 
+        pulseIdx(:,TTLNum)=times>=TTLtimes(TTLNum) & times<=(TTLtimes(TTLNum)+max([duration 0.010])); %keep min window of 10ms 
+%         pulseIdx(find(times>=TTLtimes(TTLNum),1),TTLNum)=true;    
     end
     onSpikes=any(pulseIdx,2);
     
     %off-pulse waveforms
     offpulseSDFploth=plot(mean(waveforms(~onSpikes &...
         times>=TTLtimes(1) & times<=TTLtimes(end),:)),'linewidth',2,'color','k'); %cmap(cellNum,:)
+%     offpulseSDFploth=plot(mean(waveforms(~onSpikes &...
+%         times>=TTLtimes(1)-30 & times<=TTLtimes(1),:)),'linewidth',2,'color','k'); %cmap(cellNum,:)
     
     wfSEM=std(waveforms(~onSpikes,:))/ sqrt(size(waveforms(~onSpikes,:),2)); %standard error of the mean
     wfSEM = wfSEM * 1.96; % 95% of the data will fall within 1.96 standard deviations of a normal distribution
     patch([1:length(wfSEM),fliplr(1:length(wfSEM))],...
         [mean(waveforms(~onSpikes,:))-wfSEM,fliplr(mean(waveforms(~onSpikes,:))+wfSEM)],...
         'k','EdgeColor','none','FaceAlpha',0.2); %cmap(cellNum,:)
-    
+        
     % on-pulse waveforms
-    onpulseSDFploth=plot(mean(waveforms(onSpikes,:)),'linewidth',2,'color',[0.3 0.75 0.93]);
-    
+    RGBvals=[0.9490 0.1176 0.1176]; %[0.8627    0.4980    0.2824]; % %[0.3 0.75 0.93]
+    onpulseSDFploth=plot(mean(waveforms(onSpikes,:)),'linewidth',2,'color',RGBvals);
+
     wfSEM=std(waveforms(onSpikes,:))/ sqrt(size(waveforms(onSpikes,:),2)); %standard error of the mean
     wfSEM = wfSEM * 1.96; % 95% of the data will fall within 1.96 standard deviations of a normal distribution
     patch([1:length(wfSEM),fliplr(1:length(wfSEM))],...
         [mean(waveforms(onSpikes,:))-wfSEM,fliplr(mean(waveforms(onSpikes,:))+wfSEM)],...
-        [0.3 0.75 0.93],'EdgeColor','none','FaceAlpha',0.5);
+        RGBvals,'EdgeColor','none','FaceAlpha',0.5);
     
     set(gca,'xTick',[0,15,30,45])
     figXlabels=get(gca,'xTickLabel');
