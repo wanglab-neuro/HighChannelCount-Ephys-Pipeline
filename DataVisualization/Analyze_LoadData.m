@@ -372,9 +372,16 @@ end
 % plot(timeLine,wAngle(1:numel(timeLine)));
 
 
-function traces = ReadRecTraces(fileName)
+function traces = ReadRecTraces(fileName,numElectrodes,segment)
+if nargin==1; numElectrodes=32; end
 fid = fopen(fileName,'r');
-traces=fread(fid,'int16');
+if ~exist('segment','var')
+    traces=fread(fid,[numElectrodes,Inf],'int16');
+else
+    if numel(segment)>2; segment=[segment(1) segment(end)]; end
+    fseek(fid, numElectrodes * (segment(1)-1) *2, 'bof');
+    traces=fread(fid,[numElectrodes,diff(segment)+1],'int16');
+end
 fclose(fid);
 end
 
