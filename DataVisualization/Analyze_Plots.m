@@ -15,7 +15,7 @@ if any(processedDataFiles)
         %         fclose(traceFile);
     end
     %% if needed, load traces and save file here
-    if ~exist('traces','var')
+    if ~isfield(ephys,'traces') & ~exist('traces','var')
         traces=ephys.traces; varInfo=whos('traces');
         switch varInfo.class
             case 'matlab.io.datastore.FileDatastore' % datastore
@@ -28,7 +28,7 @@ if any(processedDataFiles)
         traces=EphysFun.FilterTraces(traces,ephys.recInfo.samplingRate);
         save(fullfile(dirFiles(processedDataFiles).folder,dirFiles(processedDataFiles).name),...
             'traces','-append')
-    else
+    elseif exist('traces','var') & ~isfield(ephys,'traces')
         ephys.traces=traces;
         clearvars('traces');
     end
@@ -48,7 +48,7 @@ end
 % bWhisk=behav.whiskerTrackingData.keepWhiskerIDs==behav.whiskerTrackingData.bestWhisker; %best whisker
 whiskers=behav.whiskers;
 bWhisk=find([whiskers.bestWhisker]);
-% figure; hold on; (plot(whiskers(5).angle))
+% figure; hold on; plot(vertcat(whiskers.angle)');
 
 %% compute whisking frequency (different from instantaneous frequency
 for wNum=1:numel(bWhisk)
@@ -100,19 +100,19 @@ if cropTraces
     end
 end
 
-%% whisking epochs (based on first trace, if multiple whisker tracked)
+%% whisking epochs (based on best whiskers, if multiple whisker tracked)
 ampThd=18; %12; %18 %amplitude threshold
 freqThld=1; %frequency threshold
 minBoutDur=1000; %500; % 1000 % minimum whisking bout duration: 1s
-whiskingEpochs=cell(numel(bWhisk),1);
+[whiskingEpochs,whiskingEpochsList]=deal(cell(numel(bWhisk),1));
 for wNum=1:numel(bWhisk)
     whiskingEpochs{wNum}=WhiskingFun.FindWhiskingEpochs(...
         whiskers(bWhisk(wNum)).amplitude,whiskers(bWhisk(wNum)).frequency,...
         ampThd, freqThld, minBoutDur);
     whiskingEpochs{wNum}(isnan(whiskingEpochs{wNum}))=false; %just in case
-    whiskingEpochsList=bwconncomp(whiskingEpochs{wNum});
-    [~,wBoutDurSort]=sort(cellfun(@length,whiskingEpochsList.PixelIdxList),'descend');
-    whiskingEpochsList.PixelIdxListSorted=whiskingEpochsList.PixelIdxList(wBoutDurSort);
+    whiskingEpochsList{wNum}=bwconncomp(whiskingEpochs{wNum});
+    [~,wBoutDurSort]=sort(cellfun(@length,whiskingEpochsList{wNum}.PixelIdxList),'descend');
+    whiskingEpochsList{wNum}.PixelIdxListSorted=whiskingEpochsList{wNum}.PixelIdxList(wBoutDurSort);
 end
 
 if false
@@ -191,7 +191,8 @@ end
 %% Overview plot
 opt.zoomin=false;
 opt.saveFig=false;
-opt.xpType='default'; %'GFE3'; %'asymmetry' %'default'
+opt.xpType='GFE3'; %'GFE3'; %'asymmetry' %'default'
+opt.smooth=false;
 NBC_Plots_Overview(whiskers(bWhisk),whiskingEpochs,breathing,ephys,pulses.TTLTimes,opt);
 
 opt.chNum=11;
@@ -206,6 +207,18 @@ PhotoTagPlots(ephys,pulses);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% WARNING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Any tuning computation has to be done outside of stimulation periods
 for wNum=1:numel(bWhisk)
+    
+% for bWhisk=1:6
+% ampThd=10; %12; %18 %amplitude threshold
+% freqThld=1; %frequency threshold
+% minBoutDur=1000; %500; % 1000 % minimum whisking bout duration: 1s
+% whiskingEpochs{wNum}=WhiskingFun.FindWhiskingEpochs(whiskers(bWhisk(wNum)).amplitude,whiskers(bWhisk(wNum)).freq,...
+%                 ampThd,freqThld,minBoutDur);
+% % unique(bwlabel(foo))
+% % figure; hold on 
+% % plot(whiskers(bWhisk(wNum)).angle)
+% % plot(foo*20,'k') 
+    
     pulseMask=false(1,size(whiskers(bWhisk(wNum)).angle,2));
     pulseMask((round(pulses.TTLTimes(1)*1000):round(pulses.TTLTimes(end)*1000))-round(behav.vidTimes(1)*1000))=true;
     wEpochMask.behav=whiskingEpochs{wNum};wEpochMask.behav(pulseMask)=false;
@@ -217,7 +230,7 @@ for wNum=1:numel(bWhisk)
     %% Phase tuning - Individual plots
     phaseTuning=NBC_Plots_PhaseTuning(whiskers(bWhisk(wNum)).angle,whiskers(bWhisk(wNum)).phase,...
         ephys,wEpochMask,'whisking',false,false); %whiskingEpochs_m %ephys.spikeRate
-
+% end
     % Set point phase tuning
     setpointPhase=WhiskingFun.ComputePhase(whiskers(bWhisk(wNum)).setPoint,1000,[],'setpoint');
     NBC_Plots_PhaseTuning(whiskers(bWhisk(wNum)).setPoint,setpointPhase,ephys,wEpochMask,...
