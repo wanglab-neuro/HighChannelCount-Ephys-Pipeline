@@ -79,12 +79,9 @@ classdef EphysFun
             % foo=[zeros(round(spikeTimes(1)/double(samplingRate)*Fs)-1,1);foo]; %need to padd with zeroes
             % With home-made function. Same result, but takes care of the padding.
             binSize=1;
-            if nargin<3
-                timeUnit=30000;
-            end
-            if nargin<4
-                traceLength=int32(double(max(spikeTimes))/timeUnit*1000);
-            end
+            if nargin<2; unitID=ones(1,numel(spikeTimes)); end
+            if nargin<3; timeUnit=30000; end
+            if nargin<4; traceLength=int32(double(max(spikeTimes))/timeUnit*1000); end
             unitList=unique(unitID); unitList=unitList(unitList>0);
             numUnit=numel(unitList);
             spikeRasters=zeros(numUnit,ceil(traceLength));
@@ -208,6 +205,7 @@ classdef EphysFun
             if nargin<2 || isempty(timeStamps); timeStamps=1:size(spikeRasters,2); end
             switch plotType
                 case 'lines' 
+                    if size(spikeRasters,1)==1; spikeRasters=repmat(spikeRasters,2,1); end
                     [indy, indx] = ind2sub(size(spikeRasters),find(spikeRasters));                          % find row and column coordinates of spikes
                     indx=timeStamps(indx);
                     indy=indy+plotShift;                                                                    % add placement value
@@ -238,7 +236,8 @@ classdef EphysFun
         %% PlotACG
         %%%%%%%%%%
         function PlotACG(unitsIDs,spikeTimes,selectedUnits,samplingRate,axesH,cmap)
-            if nargin<5; figure; axesH=gca; end            
+            if nargin<5; figure; axesH=gca; end     
+            if ~exist('cmap','var'); cmap=parula; end
             axes(axesH); hold on; cla(axesH,'reset'); set(axesH,'Visible','on');
             binSize=1/2;
             for unitNum=numel(selectedUnits)
@@ -262,7 +261,7 @@ classdef EphysFun
             end
             % axis('tight');
             box off; grid('on'); %set(gca,'yscale','log','GridAlpha',0.25,'MinorGridAlpha',1);
-            xlabel(['Autocorrelogram (ms )']);% num2str(binSize) ' ms bins)']
+            xlabel('Autocorrelogram (ms )');% num2str(binSize) ' ms bins)']
             set(gca,'xlim',[-25 25]/binSize,... %'ylim',[0 max([max(get(gca,'ylim')) 10^1])]
                 'xtick',-25/binSize:10:25/binSize,'xticklabel',-25:10*binSize:25,...
                 'Color','white','FontSize',10,'FontName','Calibri','TickDir','out');
@@ -272,7 +271,8 @@ classdef EphysFun
         %% PLotISI
         %%%%%%%%%%
         function PLotISI(unitsIDs,spikeTimes,selectedUnits,samplingRate,axesH,cmap)
-            if nargin<5; figure; axesH=gca; end            
+            if nargin<5; figure; axesH=gca; end    
+            if ~exist('cmap','var'); cmap=parula; end
             axes(axesH); hold on; cla(axesH,'reset'); set(axesH,'Visible','on');
             for unitNum=numel(selectedUnits)
                 %spike times for that unit
