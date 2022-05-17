@@ -202,7 +202,7 @@ for fileNum=1:size(dataFiles,1)
     
     %% check that recordingName doesn't have special characters
     recordingName=regexprep(recordingName,'\W','');
-    allRecInfo{fileNum}.recordingName=recordingName;
+    allRecInfo{fileNum}.baseName=recordingName;
     
     cd(exportDir)
     if ~isfolder(recordingName)
@@ -217,6 +217,7 @@ for fileNum=1:size(dataFiles,1)
     fwrite(fileID,recordings,'int16');
     fclose(fileID);
     recInfo.export.binFile=[recordingName '_export.bin'];
+    allRecInfo{fileNum}.ephysExportName=recInfo.export.binFile;
     
     %% save other data
     if exist('fsData','var')

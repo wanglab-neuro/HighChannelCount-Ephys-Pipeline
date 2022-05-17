@@ -16,6 +16,9 @@ for fileNum=1:size(dataFiles,1)
     %% get recording's info
     recInfo = allRecInfo{fileNum};
     opt.userInput=true;
+    opt.trange = [0 Inf];
+    opt.AUCsplit = 0.99;
+    opt.minFR = 1/10;
     [exportFolder,~,configFName]=GenerateConfigChannelMap_KS(recInfo,opt);
     
     %% save KS config file name to batch list
