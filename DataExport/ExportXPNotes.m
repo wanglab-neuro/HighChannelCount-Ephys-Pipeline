@@ -24,7 +24,7 @@ opts = setvaropts(opts, "DOB", "InputFormat", "MM/dd/uu");
 
 % Import data
 xpNotesHeader = readtable(fullfile(fileDir, fileName), opts, "UseExcel", false);
-
+if ~isfield(xpNotesHeader,'Cagecard'); xpNotesHeader.Cagecard=NaN; end
 clear opts
 
 %% Now read experiment notes
@@ -176,10 +176,33 @@ for procNum=1:numel(procedureIdx)
         if any(ismember(sessionIdx,procedureRange(2:end)))
             sessionIds=find(ismember(sessionIdx,procedureRange(2:end)));
             for sessionnNum=1:numel(sessionIds)
-                sessions(sessionIds(sessionnNum)).baseName=[...
-                    xpNotesHeader.SubjectID{1} '_',...
-                    char(datetime(xpNotes.Date(procedureIdx(procNum)),'Format','MMdd')) '_'...
-                    num2str(-xpNotes.Depth(sessionIdx(sessionIds(sessionnNum))))];
+                %% Important note about naming conventions %%
+                % The code below is listing sessions from the spreadsheet, 
+                % and will look (l. 255 below) for files in the directory 
+                % that match the expected filename. 
+                % Specify your file naming convention in the code below, and
+                % fill the spreadsheet accordingly.
+                
+                % The file base name is the name used for all data (e.g.,
+                % ephys, behavior, video) associated to a given recording.
+
+                rec.Subject = xpNotesHeader.SubjectID{1};
+                rec.Session = replace(char(xpNotes.Procedure(procedureIdx(procNum))),' ','');
+                rec.Notes = xpNotes.Notes(sessionIdx(sessionIds(sessionnNum)));
+                rec.Date = char(datetime(xpNotes.Date(procedureIdx(procNum)),'Format','MMdd'));
+                rec.Depth = num2str(-xpNotes.Depth(sessionIdx(sessionIds(sessionnNum))));
+                rec.Coordinates = num2str(...
+                    [xpNotes.APcoord(sessionIdx(sessionIds(sessionnNum))),...
+                    xpNotes.MLcoord(sessionIdx(sessionIds(sessionnNum)))]);
+
+                if ~isnan(str2double(rec.Depth))
+                    baseName = [rec.Subject '_' rec.Date '_' rec.Depth];
+                else
+                    shortNotes=strsplit(rec.Notes,{' ',','});
+                    shortNotes=strcat(shortNotes{1:min([2 numel(shortNotes)])});
+                    baseName = [rec.Session '_' shortNotes];
+                end
+                sessions(sessionIds(sessionnNum)).baseName=baseName;
                 if sessionnNum>1 && strcmp(sessions(sessionIds(sessionnNum)).baseName,...
                         sessions(sessionIds(sessionnNum-1)).baseName)
                     if ~isempty(xpNotes.Comments(sessionIdx(sessionIds(sessionnNum))))

@@ -19,7 +19,15 @@ if exportNotes
     % all files and data for that subject.
     parentDir=regexp(dataDir,['(?<=\' filesep ').+?(?=\' filesep ')'],'match');
     parentDir = parentDir{end};
-    ExportXPNotes(['Experiment Note Sheet - ' parentDir '.xlsx'] , filepath)
+    subjectNotes={['Experiment Note Sheet - ' parentDir '.xlsx'];[parentDir '.xlsx']};
+    if exist(fullfile(filepath,subjectNotes{1}),'file')
+        ExportXPNotes(subjectNotes{1}, filepath);
+    elseif exist(fullfile(filepath,subjectNotes{2}),'file')
+        ExportXPNotes(subjectNotes{2}, filepath);
+    else
+        disp('No subject notes found');
+    end 
+        
 end
 
 %% Export files with BatchExport

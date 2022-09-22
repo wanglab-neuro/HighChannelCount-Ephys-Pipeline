@@ -1,0 +1,68 @@
+{
+	"Header": {
+		"SubjectID":"subjectID",
+		"Goal":"e.g.: vIRt chronic recording + opt stim",
+		"Type":"PV-CreN",
+		"Sex":"F",
+		"DOB":"09/09/2019",
+		"Tag":"1L1R",
+		"Cagecard":"1206423"
+	},
+	"Procedures": [
+		{"Procedure":"e.g.: injection",
+		"Date":"11/01/2019",
+		"Notes":""
+		},
+		{"Procedure":"e.g.: vIRt injection",
+		"Date":null,
+		"Notes":"2/8 ef1a-Flex-ChR2-mCherry 200nl 30nl/mn"
+		},
+		{"Procedure":"e.g.: FN injection",
+		"Date":null,
+		"Notes":"RG-LV-CreC 1200nl 70nl/mn"
+		},
+		{"Procedure":"e.g.: implant headpost",
+		"Date":"11/15/2019",
+		"Notes":"home-made horseshoe with cap holes ",
+		"Extended Notes":{
+			"-	    ":	"notes",
+			"-	    ":	"notes"}
+		},
+		{"Procedure":"e.g.: implant FO",
+		"Date":"11/15/2019",
+		"Notes":"200um 5mm long (4.5mm + 0.5mm spacing)",
+		"Extended Notes": [
+				{"Procedure":"e.g.: implant FO",
+				"APcoord":-5.8,
+				"MLcoord":-1.35,
+				"Depth":-4.5,
+				"Notes":"more notes"
+				},
+				{"Procedure":"e.g.: implant FO",
+				"APcoord":null,
+				"MLcoord":null,
+				"Depth":null,
+				"Notes":""
+				},
+				{"Procedure":"e.g.: implant FO",
+				"APcoord":null,
+				"MLcoord":null,
+				"Depth":null,
+				"Notes":""
+				},
+				{"Procedure":"e.g.: implant FO",
+				"APcoord":null,
+				"MLcoord":null,
+				"Depth":null,
+				"Notes":""
+				},
+				{"Procedure":"e.g.: implant FO",
+				"APcoord":null,
+				"MLcoord":null,
+				"Depth":null,
+				"Notes":""
+				}
+			]
+		}
+	],
+}
