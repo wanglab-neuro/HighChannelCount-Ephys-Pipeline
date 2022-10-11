@@ -1,31 +1,44 @@
 function [dataFiles,allRecInfo]=BatchExport(exportDir)
 
+% Prepare the export directory
 rootDir=cd;
-if ~isfolder('SpikeSorting')
-    %create export directory
-    mkdir('SpikeSorting');
-end
-dataFiles = cellfun(@(fileFormat) dir([cd filesep '**' filesep fileFormat]),...
-    {'*.dat','*raw.kwd','*RAW*Ch*.nex','*.ns6'},'UniformOutput', false);
-dataFiles=vertcat(dataFiles{~cellfun('isempty',dataFiles)});
-% just in case other export / spike sorting has been performed, do not include those files
-dataFiles=dataFiles(~cellfun(@(flnm) contains(flnm,{'_export';'_TTLs'; '_trialTTLs';...
-    '_vSyncTTLs';'_actuators_TS';...
-    'temp_wh';'_nopp.dat';'_all_sc';'_VideoFrameTimes';'_Wheel'}),...
-    {dataFiles.name})); %by filename
-dataFiles=dataFiles(~cellfun(@(flnm) contains(flnm,{'_SC';'_JR';'_ML'}),...
-    {dataFiles.folder})); % by folder name
+if ~isfolder('SpikeSorting'); mkdir('SpikeSorting'); end % create export directory if needed
 if ~exist('exportDir','var')
     exportDir=(fullfile(rootDir,'SpikeSorting'));
 end
 
+%% List data files
+% Define recording file formats / folder to keep or exclude
+fileFormats.keep={'*.dat','*raw.kwd','*RAW*Ch*.nex','*.ns*'};
+fileFormats.exclude={'_export';'_TTLs'; '_trialTTLs';...
+                     '_vSyncTTLs';'_actuators_TS';'temp_wh';...
+                     '_nopp.dat';'_all_sc';'_VideoFrameTimes';'_Wheel'};
+fileFolder.exclude={'_SC';'_JR';'_ML'};
+% Same for video files
+videoFormats.keep={'*.mp4','*.avi'};
+videoFolder.exclude={'WhiskerTracking'}; %don't include WhiskerTracking folder
+
+dataFiles = cellfun(@(fileFormat) dir([cd filesep '**' filesep fileFormat]),fileFormats.keep,'UniformOutput', false);
+dataFiles=vertcat(dataFiles{~cellfun('isempty',dataFiles)});
+
+% If Blackrock .ns files, check highest, then ignore others for now
+fileF=cellfun(@(x) x(end-3:end), {dataFiles.name},'UniformOutput', false);
+if any(cellfun(@(x) contains(x,'.ns'),fileF))
+    nsIdx=find(cellfun(@(x) contains(x,'.ns'),fileF));
+    [~,sortIdx]=sort(string(cell2mat(fileF(nsIdx)')),'descend');
+    dataFiles=dataFiles(~ismember(1:numel(dataFiles),nsIdx(sortIdx(2:end))));
+end
+
+% In case other export / spike sorting has been performed, do not include those files
+dataFiles=dataFiles(~cellfun(@(flnm) contains(flnm,fileFormats.exclude),{dataFiles.name})); %by filename
+dataFiles=dataFiles(~cellfun(@(flnm) contains(flnm,fileFolder.exclude),{dataFiles.folder})); % by folder name
+
 %also check if there are video frame times to export
 videoFiles = cellfun(@(fileFormat) dir([cd filesep '**' filesep fileFormat]),...
-    {'*.mp4','*.avi'},'UniformOutput', false);
+    videoFormats.keep,'UniformOutput', false);
 videoFiles=vertcat(videoFiles{~cellfun('isempty',videoFiles)});
 if ~isempty(videoFiles)
-    videoFiles=videoFiles(~cellfun(@(flnm) contains(flnm,{'WhiskerTracking'}),... %don't include WhiskerTracking folder
-        {videoFiles.folder})); %by filename
+    videoFiles=videoFiles(~cellfun(@(flnm) contains(flnm,videoFolder.exclude),{videoFiles.folder})); 
 end
 
 allRecInfo=cell(size(dataFiles,1),1);
@@ -70,8 +83,7 @@ else
         end
     else
         %or ask
-        [probeFileName,probePathName] = uigetfile('*.json',['Select the .json probe file for '...
-            sessionsFolder],probePathName);
+        [probeFileName,probePathName] = uigetfile('*.json',['Select the .json probe file for ' sessionsFolder],probePathName);
     end
     if isRecSession
         copyfile(fullfile(probePathName,probeFileName),fullfile(cd,'SpikeSorting',probeFileName));
@@ -80,42 +92,11 @@ end
 
 %% export each file
 for fileNum=1:size(dataFiles,1)
-    try
-        [recInfo,recordings,spikes,TTLdata] = LoadEphysData(dataFiles(fileNum).name,dataFiles(fileNum).folder);
-        
-        videoTTL=TTLdata(strcmp({TTLdata.channelType},'Camera'));
-        trialTTL=TTLdata(strcmp({TTLdata.channelType},'Zaber'));
-        laserTTL=TTLdata(strcmp({TTLdata.channelType},'Laser'));
 
-        allRecInfo{fileNum}=recInfo;
-    catch
-%         continue
-    end
+    [recInfo,allData]=LoadData(dataFiles(fileNum).name,dataFiles(fileNum).folder);
     
-    %% load other data
-    NEVdata=openNEV(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'nev']));
-    if isfield(NEVdata.ElectrodesInfo,'ElectrodeLabel')
-        fsIdx=cellfun(@(x) contains(x','FlowSensor'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
-        if any(fsIdx)
-            try
-                fsData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns4']));
-                fsIdx = cellfun(@(x) contains(x,'FlowSensor'),{fsData.ElectrodesInfo.Label});
-                fsData = fsData.Data(fsIdx,:);
-            catch
-                % empty data
-            end
-        end
-        reIdx = cellfun(@(x) contains(x','RotaryEncoder'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
-        if any(reIdx)
-            try
-                reData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns2']));
-                reIdx = cellfun(@(x) contains(x,'RotaryEncoder'),{reData.ElectrodesInfo.Label});
-                reData = reData.Data(reIdx,:);
-            catch
-                % empty data
-            end
-        end
-    end
+    allRecInfo{fileNum}=recInfo;
+
     vSyncTTLDir=cd;
     
     %% get recording name
