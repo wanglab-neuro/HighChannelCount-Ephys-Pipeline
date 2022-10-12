@@ -3,7 +3,7 @@ currDir=cd; cd(dName);
 
 try
     disp(['loading ' fullfile(dName,fName)]);
-    
+
     if contains(fName,'.ns') %% Blackrock raw data
         [data,rec,spikes,TTLs]=LoadEphys_Blackrock(dName,fName);
     elseif contains(fName,{'.bin','dat'}) %% Binary file (e.g., from Intan)
@@ -21,9 +21,9 @@ try
         [rec,data,spikes]=deal([]);
         TTLs=LoadEphys_NPY(dName);
     end
-    
+
 catch
     disp('Failed loading ephys data');
 end
-cd(currDir); 
+cd(currDir);
 end

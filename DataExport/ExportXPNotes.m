@@ -200,7 +200,7 @@ for procNum=1:numel(procedureIdx)
                 else
                     shortNotes=strsplit(rec.Notes,{' ',','});
                     shortNotes=strcat(shortNotes{1:min([2 numel(shortNotes)])});
-                    baseName = [rec.Session '_' shortNotes];
+                    baseName = [rec.Subject '_' rec.Date '_' shortNotes]; % '_' rec.Session
                 end
                 sessions(sessionIds(sessionnNum)).baseName=baseName;
                 if sessionnNum>1 && strcmp(sessions(sessionIds(sessionnNum)).baseName,...
