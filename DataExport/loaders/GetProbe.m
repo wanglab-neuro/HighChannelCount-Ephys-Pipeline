@@ -12,7 +12,7 @@ else
     % locate probe files folder
     filePath  = mfilename('fullpath');
     filePath = regexp(filePath,['.+(?=\' filesep '.+$)'],'match','once'); %removes filename
-    probePathName = fullfile(filePath, 'probemaps');
+    probePathName = fullfile(fileparts(filePath), 'probemaps');
     if isempty(notes)
         % check if info is in subject json file
         parentList=dir('..');
