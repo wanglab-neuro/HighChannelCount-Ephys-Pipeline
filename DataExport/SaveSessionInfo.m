@@ -38,12 +38,13 @@ if any(exist(notesFile,'file'))
     end
     % allocate data
     if ~isempty(session)
-        ephys=session; ephys=rmfield(ephys,{'baseName','date','stimPower',...
-            'stimFreq','pulseDur', 'stimDevice'});ephys=ephys(1);
+        ephys=session; ephys=rmfield(ephys,{'subject','baseName','shortDate','fullDate','shortNotes',...
+            'stimPower','stimFreq','pulseDur', 'stimDevice'});ephys=ephys(1);
         if ~isfield(ephys,'theta'); ephys.theta=[]; end
         if ~isfield(ephys,'phy'); ephys.phy=[]; end
 
-        photoStim=session; photoStim=rmfield(photoStim,{'baseName','date',...
+        photoStim=session; photoStim=rmfield(photoStim,{'subject','baseName',...
+            'shortDate','fullDate','shortNotes',...
             'probe','adapter','AP', 'ML','depth'});
         for protocolNum=1:size(photoStim,2) % in case there are multiple stimulation protocols
             photoStim(protocolNum).protocolNum=protocolNum-1;

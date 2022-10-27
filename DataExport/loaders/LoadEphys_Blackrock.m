@@ -19,7 +19,7 @@ end
 spikes=struct('clusters',[],'electrodes',[],'spikeTimes',[],'waveForms',[],'metadata',[]);
 
 % Get channel info and spike data
-eventData=openNEV(fullfile(dName,[fName(1:end-3) 'nev']));
+eventData=openNEV(fullfile(dName,[fName(1:end-3) 'nev']),'overwrite');
 spikes.clusters=eventData.Data.Spikes.Unit;
 spikes.electrodes=eventData.Data.Spikes.Electrode;
 spikes.spikeTimes=eventData.Data.Spikes.TimeStamp;
@@ -135,7 +135,7 @@ if ~isempty(TTL_ID)
                     TTLIdx=bwconncomp(TTL_ID(:,TTLChan));%'PixelIdxList'
                     
                     if TTLIdx.NumObjects==1 %e.g., when only camera sync TTL, no laser pulses
-                        disp('Only one TTL channel. Check results, this bit of code in LoadEphys_Blackrock hasnt been test');
+                        disp('Only one TTL channel. Check results, this bit of code in LoadEphys_Blackrock hasnt been tested');
                         keyboard;
                         %                     TTLIdx=TTLIdx.PixelIdxList{:};
                     end

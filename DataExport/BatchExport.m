@@ -65,34 +65,39 @@ for fileNum=1:size(dataFiles,1)
 
     vSyncTTLDir=cd;
     
-    %% get recording name
-    % (in case they're called 'continuous' or some bland thing like this)
-    % basically, Open Ephys
-    if contains(dataFiles(fileNum).name,'continuous')
-        foldersList=regexp(strrep(dataFiles(fileNum).folder,'-','_'),...
-            ['(?<=\' filesep ').+?(?=\' filesep ')'],'match');
-        expNum=foldersList{cellfun(@(fl) contains(fl,'experiment'),foldersList)}(end);
-        recNum=foldersList{cellfun(@(fl) contains(fl,'recording'),foldersList)}(end);
-        recordingName=foldersList{find(cellfun(@(fl) contains(fl,'experiment'),foldersList))-1};
-        recordingName=[recordingName '_' expNum '_' recNum];
-    elseif contains(dataFiles(fileNum).name,'experiment')
-        folderIdx=regexp(dataFiles(fileNum).folder,['(?<=\w\' filesep ').+?']);
-        if isempty(folderIdx)
-            folderIdx=1;
-        end
-        recordingName=strrep(dataFiles(fileNum).folder(folderIdx(end):end),'-','_');
+    %% fill in some info about the recording
+    if exist("notes","var") && any(contains({notes.Sessions.baseName},dataFiles(fileNum).name(1:end-4)))
+        sessionIdx=contains({notes.Sessions.baseName}, dataFiles(fileNum).name(1:end-4));
+        recInfo.baseName=notes.Sessions(sessionIdx).baseName;
+        recInfo.subject=notes.Sessions(sessionIdx).subject;
+        recInfo.shortDate=notes.Sessions(sessionIdx).shortDate;
+        recInfo.probeDepth=notes.Sessions(sessionIdx).depth;
     else
-        recordingName=dataFiles(fileNum).name(1:end-4);
+        if contains(dataFiles(fileNum).name,'continuous')
+            % in case they're called 'continuous' or some bland thing like this - basically, Open Ephys
+            foldersList=regexp(strrep(dataFiles(fileNum).folder,'-','_'),...
+                ['(?<=\' filesep ').+?(?=\' filesep ')'],'match');
+            expNum=foldersList{cellfun(@(fl) contains(fl,'experiment'),foldersList)}(end);
+            recNum=foldersList{cellfun(@(fl) contains(fl,'recording'),foldersList)}(end);
+            recordingName=foldersList{find(cellfun(@(fl) contains(fl,'experiment'),foldersList))-1};
+            recordingName=[recordingName '_' expNum '_' recNum];
+        elseif contains(dataFiles(fileNum).name,'experiment')
+            folderIdx=regexp(dataFiles(fileNum).folder,['(?<=\w\' filesep ').+?']);
+            if isempty(folderIdx)
+                folderIdx=1;
+            end
+            recordingName=strrep(dataFiles(fileNum).folder(folderIdx(end):end),'-','_');
+        else
+            recordingName=dataFiles(fileNum).name(1:end-4);
+        end
+        recInfo.baseName=recordingName;
+        recNameComp=regexp(strrep(recordingName,'_','-'),'\w+','match');
+        recInfo.subject=recNameComp{1};
+        recInfo.shortDate=recNameComp{2};
+        recInfo.probeDepth=recNameComp{3};
     end
-    
-    % collect info
     recInfo.dataPoints=int32(recInfo.dataPoints);
-    recInfo.baseName=recordingName;
-    recNameComp=regexp(strrep(recordingName,'_','-'),'\w+','match');
-    recInfo.subject=recNameComp{1};
-    recInfo.shortDate=recNameComp{2};
-    recInfo.probeDepth=recNameComp{3};
-    
+
     %% get video sync TLLs
     if ~exist('videoTTL','var') && isempty(videoTTL)
         try % this should already be performed by LoadTTL, called from LoadEphysData above
@@ -148,7 +153,7 @@ for fileNum=1:size(dataFiles,1)
     end
     
     %% check that recordingName doesn't have special characters
-    recordingName=regexprep(recordingName,'\W','');
+    recordingName=regexprep(recInfo.baseName,'\W','');
     allRecInfo{fileNum}.baseName=recordingName;
     
     cd(exportDir)
@@ -298,6 +303,7 @@ for fileNum=1:size(dataFiles,1)
             recInfo.likelyVideoFile=videoFiles(fileMatchIdx).name;
         end
     end
+    
     
     %% trial data
     trials = struct('trialNum', [], 'start', [], 'stop', [], 'isphotostim', []);

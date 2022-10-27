@@ -39,7 +39,7 @@ end
 
 %% load other data
 if contains(fName,{'.nev','.ns'})
-    NEVdata=openNEV(fullfile(dName,[fName(1:end-3), 'nev']));
+    NEVdata=openNEV(fullfile(dName,[fName(1:end-3), 'nev']),'overwrite');
     if isfield(NEVdata.ElectrodesInfo,'ElectrodeLabel')
         fsIdx=cellfun(@(x) contains(x','FlowSensor'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
         if any(fsIdx)
