@@ -50,13 +50,15 @@ xpNotesHeader.Cagecard=num2str(xpNotesHeader.Cagecard);
 if xpNotesHeader.DOB < '01-Jan-2015'; xpNotesHeader.DOB(1)=''; end
 if nanmean(xpNotes.Depth)>0; xpNotes.Depth=-xpNotes.Depth; end
 
-%% find procedures and sessions
+%% find procedures and sessions (+ conditions within sessions, if any)
 procedureIdx=~isundefined(xpNotes.Procedure);
 sessionIdx=xpNotes.Procedure=='R'; % Ephys recordings should be noted as R
-procedureIdx=find(procedureIdx & ~sessionIdx);
+conditionIdx=xpNotes.Procedure=='C'; % Conditions within recordings should be noted as C
+procedureIdx=find(procedureIdx & ~sessionIdx & ~conditionIdx);
 sessionIdx=find(sessionIdx);
 if ~isempty(sessionIdx)
-    sessions=struct('baseName',[],'date',[],'probe',[],'adapter',[],'AP',[],'ML',[],'depth',[],...
+    sessions=struct('subject',[],'shortDate',[],'fullDate',[],'shortNotes',[],...
+        'baseName',[],'probe',[],'adapter',[],'AP',[],'ML',[],'depth',[],...
         'stimPower',[],'stimFreq',[],'pulseDur',[],'stimDevice',[],'comments',[]);
 end
 
@@ -97,8 +99,8 @@ for procNum=1:numel(procedureIdx)
     % if there are other notes, add them
     if numel(procedureRange)>1
         % There are notes associated with the procedure.
-        % Two cases:
-        %   1/ any procedure listed above, excluding recordings
+        %% Three cases:
+        %%   1/ any procedure listed above, excluding recordings
         if any(ismember(procedureIdx,procedureRange(2:end)))
             fprintf(fid,',\r\n\t\t"Subprocedures": [\r\n');
             subprocIdx=procedureIdx(ismember(procedureIdx,procedureRange(2:end)));
@@ -123,9 +125,9 @@ for procNum=1:numel(procedureIdx)
             end
             fprintf(fid,'\r\n\t\t\t]\r\n');
             
-            %   2/ * recordings (aka sessions in the pipeline, that groups
-            %       ephys, video and other concurrent recordings together)
-            %      * some procedures that do not have a stereotax coordinates
+            %%   2/ * recordings (aka sessions in the pipeline, that groups
+            %%       ephys, video and other concurrent recordings together)
+            %%      * some procedures that do not have a stereotax coordinates
         elseif any(ismember(sessionIdx, procedureRange(2:end))) || contains(char(xpNotes.Procedure(procedureIdx(procNum))),'headpost')
             recMark=xpNotes.Procedure(procedureRange(2:end));
             recMark(isundefined(recMark))=('-'); recMark=string(recMark);
@@ -142,7 +144,7 @@ for procNum=1:numel(procedureIdx)
                 '",\r\n\t\t\t"'); %[notes{:}];
             fprintf(fid,',\r\n\t\t"Extended Notes":{\r\n\t\t\t"%s"}\r\n',notes);
             
-            %   3/ Special case like FO implantation
+            %%   3/ Special case like FO implantation
         else
             fprintf(fid,',\r\n\t\t"Extended Notes": [\r\n');
             subprocIdx=procedureRange(2:end);
@@ -189,20 +191,24 @@ for procNum=1:numel(procedureIdx)
                 rec.Subject = xpNotesHeader.SubjectID{1};
                 rec.Session = replace(char(xpNotes.Procedure(procedureIdx(procNum))),' ','');
                 rec.Notes = xpNotes.Notes(sessionIdx(sessionIds(sessionnNum)));
+                shortNotes=strsplit(rec.Notes,{' ',','});
+                shortNotes=strcat(shortNotes{1:min([2 numel(shortNotes)])});
                 rec.Date = char(datetime(xpNotes.Date(procedureIdx(procNum)),'Format','MMdd'));
                 rec.Depth = num2str(-xpNotes.Depth(sessionIdx(sessionIds(sessionnNum))));
                 rec.Coordinates = num2str(...
                     [xpNotes.APcoord(sessionIdx(sessionIds(sessionnNum))),...
                     xpNotes.MLcoord(sessionIdx(sessionIds(sessionnNum)))]);
-
                 if ~isnan(str2double(rec.Depth))
                     baseName = [rec.Subject '_' rec.Date '_' rec.Depth];
                 else
-                    shortNotes=strsplit(rec.Notes,{' ',','});
-                    shortNotes=strcat(shortNotes{1:min([2 numel(shortNotes)])});
                     baseName = [rec.Subject '_' rec.Date '_' shortNotes]; % '_' rec.Session
                 end
+                % Start entering info into "session"
+                sessions(sessionIds(sessionnNum)).subject=rec.Subject;
+                sessions(sessionIds(sessionnNum)).shortDate=rec.Date;
+                sessions(sessionIds(sessionnNum)).shortNotes=shortNotes;
                 sessions(sessionIds(sessionnNum)).baseName=baseName;
+
                 if sessionnNum>1 && strcmp(sessions(sessionIds(sessionnNum)).baseName,...
                         sessions(sessionIds(sessionnNum-1)).baseName)
                     if ~isempty(xpNotes.Comments(sessionIdx(sessionIds(sessionnNum))))
@@ -216,7 +222,8 @@ for procNum=1:numel(procedureIdx)
                             num2str(-xpNotes.Depth(sessionIdx(sessionIds(sessionnNum)))+1)];
                     end
                 end
-                sessions(sessionIds(sessionnNum)).date=xpNotes.Date(procedureIdx(procNum));
+
+                sessions(sessionIds(sessionnNum)).fullDate=xpNotes.Date(procedureIdx(procNum));
                 recNotes=xpNotes.Notes(procedureIdx(procNum));
                 sessions(sessionIds(sessionnNum)).probe=regexp(recNotes,'.+(?= &)','match','once');
                 sessions(sessionIds(sessionnNum)).adapter=regexp(recNotes,'(?<=& ).+','match','once');
@@ -247,25 +254,39 @@ if exist('sessions','var')
     % validate files existence
     fileList=dir([fileDir filesep '**' filesep]);
     fileList=fileList(~[fileList.isdir]);
-    [~,fileList,] = cellfun(@(fileName) fileparts(fileName), {fileList.name}, 'UniformOutput', false);
-    fileList=unique(fileList');
-    
+    [~,fileList,fileFormat] = cellfun(@(fileName) fileparts(fileName), {fileList.name}, 'UniformOutput', false);
+    [fileList,fIdx]=unique(fileList');
+    fileFormat=fileFormat(fIdx);
+
     for fileNum=1:size(sessions,2)
-        fileIdx=cellfun(@(fileName) strcmp(fileName,sessions(fileNum).baseName), fileList);
-        if ~any(fileIdx)
-                fileIdx=cellfun(@(fileName) contains(fileName,sessions(fileNum).baseName,'IgnoreCase',true), fileList);
-                if ~any(fileIdx)
-                    disp(['File ' sessions(fileNum).baseName ' could not be located']);
-                else
-                    recList=fileList(fileIdx);
-                    lengthfileName=cellfun(@length, recList);
-                    sessions(fileNum).baseName=recList{lengthfileName==min(lengthfileName)};
-                end
-        elseif sum(fileIdx)>1
-                disp(['Files ' fileList{fileIdx} ' have the same basename']);
+        % compare base name with available file names, in different ways (nomenclatures vary)
+        fileIdx={(cellfun(@(fileName) strcmp(fileName,sessions(fileNum).baseName), fileList));...
+        (cellfun(@(fileName) contains(fileName,sessions(fileNum).baseName,'IgnoreCase',true), fileList));...
+        (cellfun(@(fileName) contains(fileName,sessions(fileNum).shortNotes,'IgnoreCase',true), fileList));...
+        (cellfun(@(fileName) contains(sessions(fileNum).baseName,fileName,'IgnoreCase',true), fileList))};
+        switch find(cellfun(@any,fileIdx),1)
+            case 1
+                fileIdx=fileIdx{1};
+            case 2
+                fileIdx=fileIdx{2};
+            case 3
+                fileIdx=fileIdx{3};
+            case 4
+                fileIdx=fileIdx{4};
+            otherwise
+                disp(['File ' sessions(fileNum).baseName ' could not be located']);
         end
+        recList=fileList(fileIdx);
+        % remove none rec formats first
+        recList=recList(~contains(fileFormat(fileIdx),{'.xlsx','.csv','.avi','mp4'}));
+        % then sort by length
+        lengthfileName=cellfun(@length, recList);
+        sessions(fileNum).baseName=recList{lengthfileName==min(lengthfileName)};
+%         if sum(fileIdx)>1
+%             disp(['Files ' fileList{fileIdx} ' have the same basename']);
+%         end
     end
-    
+
     fprintf(fid,'\t"Sessions": [ \r\n');
     str=strrep(jsonencode(sessions),',"',sprintf(',\r\n\t\t"'));
     str=strrep(str,'},{',sprintf('\r\n\t\t},\r\n\t\t{'));

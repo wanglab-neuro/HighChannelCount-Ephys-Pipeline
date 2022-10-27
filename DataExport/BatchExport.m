@@ -336,13 +336,13 @@ for fileNum=1:size(dataFiles,1)
     else
         trials.trialNum=0; trials.start=0; trials.stop=recInfo.duration_sec; trials.isphotostim = 0;
     end
-    
+    recInfo.trials=trials;
+
     %% save data info
     % save as .mat file (will be discontinued)
     save([recordingName '_recInfo'],'recInfo','-v7.3');
     
     % save a json file in the root folder for downstream pipeline ingest
-    recInfo.trials=trials;
     SaveSessionInfo(recInfo, recordingName, rootDir)
 
     % TBD: insert session info in pipeline right here
