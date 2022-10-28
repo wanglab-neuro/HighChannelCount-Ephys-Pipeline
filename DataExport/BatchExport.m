@@ -66,7 +66,7 @@ for fileNum=1:size(dataFiles,1)
     vSyncTTLDir=cd;
     
     %% fill in some info about the recording
-    if exist("notes","var") && any(contains({notes.Sessions.baseName},dataFiles(fileNum).name(1:end-4)))
+    if ~isempty(notes) && any(contains({notes.Sessions.baseName},dataFiles(fileNum).name(1:end-4)))
         sessionIdx=contains({notes.Sessions.baseName}, dataFiles(fileNum).name(1:end-4));
         recInfo.baseName=notes.Sessions(sessionIdx).baseName;
         recInfo.subject=notes.Sessions(sessionIdx).subject;
