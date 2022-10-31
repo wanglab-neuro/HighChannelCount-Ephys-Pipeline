@@ -260,21 +260,24 @@ if exist('sessions','var')
 
     for fileNum=1:size(sessions,2)
         % compare base name with available file names, in different ways (nomenclatures vary)
-        fileIdx={(cellfun(@(fileName) strcmp(fileName,sessions(fileNum).baseName), fileList));...
+        fullDate_baseName=[sessions(fileNum).subject '_' datestr(sessions(fileNum).fullDate,'mmddyy') '_' num2str(abs(sessions(fileNum).depth))];
+        fileIdx={(cellfun(@(fileName) any(strcmpi(fileName,{sessions(fileNum).baseName,fullDate_baseName})), fileList));...
         (cellfun(@(fileName) contains(fileName,sessions(fileNum).baseName,'IgnoreCase',true), fileList));...
         (cellfun(@(fileName) contains(fileName,sessions(fileNum).shortNotes,'IgnoreCase',true), fileList));...
         (cellfun(@(fileName) contains(sessions(fileNum).baseName,fileName,'IgnoreCase',true), fileList))};
-        switch find(cellfun(@any,fileIdx),1)
-            case 1
-                fileIdx=fileIdx{1};
-            case 2
-                fileIdx=fileIdx{2};
-            case 3
-                fileIdx=fileIdx{3};
-            case 4
-                fileIdx=fileIdx{4};
-            otherwise
-                disp(['File ' sessions(fileNum).baseName ' could not be located']);
+        if ~isempty(find(cellfun(@any,fileIdx),1))
+            switch find(cellfun(@any,fileIdx),1)
+                case 1
+                    fileIdx=fileIdx{1};
+                case 2
+                    fileIdx=fileIdx{2};
+                case 3
+                    fileIdx=fileIdx{3};
+                case 4
+                    fileIdx=fileIdx{4};
+            end
+        else
+            disp(['File ' sessions(fileNum).baseName ' could not be located']);
         end
         recList=fileList(fileIdx);
         % remove none rec formats first
