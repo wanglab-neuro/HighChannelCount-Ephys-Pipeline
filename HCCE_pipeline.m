@@ -38,6 +38,8 @@ if exportData
     save('fileInfo','dataFiles','allRecInfo');
 end
 
+%%
+
 %% Sort spikes
 if spikeSort
     switch spikeSort

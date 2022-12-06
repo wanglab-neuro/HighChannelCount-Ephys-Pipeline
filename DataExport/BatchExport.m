@@ -41,7 +41,7 @@ if ~isempty(videoFiles)
     videoFiles=videoFiles(~cellfun(@(flnm) contains(flnm,videoFolder.exclude),{videoFiles.folder})); 
 end
 
-% check if experiment notes' json file exist
+% check if experiment notes' json file exists
 parentList=dir('..');
 notesIdx=cellfun(@(fName) contains(fName,'_notes.json'), {parentList.name});
 if any(notesIdx)

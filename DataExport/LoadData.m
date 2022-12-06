@@ -34,7 +34,7 @@ catch
 end
    
 if isRecSession
-    GetProbe(dName,notes,isRecSession);
+    [recInfo.probeFileName,recInfo.probePathName]=GetProbe(dName,notes,isRecSession);
 end
 
 %% load other data
@@ -44,7 +44,7 @@ if contains(fName,{'.nev','.ns'})
         fsIdx=cellfun(@(x) contains(x','FlowSensor'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
         if any(fsIdx)
             try
-                fsData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns4']));
+                fsData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns4'])); % NS4 files record at 10k samples/second
                 fsIdx = cellfun(@(x) contains(x,'FlowSensor'),{fsData.ElectrodesInfo.Label});
                 varargout{6} = fsData.Data(fsIdx,:);
             catch
@@ -53,7 +53,7 @@ if contains(fName,{'.nev','.ns'})
         reIdx = cellfun(@(x) contains(x','RotaryEncoder'),{NEVdata.ElectrodesInfo.ElectrodeLabel});
         if any(reIdx)
             try
-                reData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns2']));
+                reData = openNSx(fullfile(dataFiles(fileNum).folder,[dataFiles(fileNum).name(1:end-3), 'ns2'])); % NS2 files record at 1k samples/second
                 reIdx = cellfun(@(x) contains(x,'RotaryEncoder'),{reData.ElectrodesInfo.Label});
                 varargout{7} = reData.Data(reIdx,:);
             catch

@@ -25,6 +25,7 @@ opts = setvaropts(opts, "DOB", "InputFormat", "MM/dd/uu");
 % Import data
 xpNotesHeader = readtable(fullfile(fileDir, fileName), opts, "UseExcel", false);
 if ~isfield(xpNotesHeader,'Cagecard'); xpNotesHeader.Cagecard=NaN; end
+if ~isfield(xpNotesHeader,'DOB'); xpNotesHeader.DOB=NaN; end
 clear opts
 
 %% Now read experiment notes
@@ -57,21 +58,39 @@ conditionIdx=xpNotes.Procedure=='C'; % Conditions within recordings should be no
 procedureIdx=find(procedureIdx & ~sessionIdx & ~conditionIdx);
 sessionIdx=find(sessionIdx);
 if ~isempty(sessionIdx)
-    sessions=struct('subject',[],'shortDate',[],'fullDate',[],'shortNotes',[],...
+    sessions=struct('subject',[],'shortDate',[],'fullDate',[],'description',[],'shortNotes',[],...
         'baseName',[],'probe',[],'adapter',[],'AP',[],'ML',[],'depth',[],...
         'stimPower',[],'stimFreq',[],'pulseDur',[],'stimDevice',[],'comments',[]);
+end
+
+%% check if project notes' json file exists
+parentList=dir(fileparts(fileDir));
+notesIdx=cellfun(@(fName) contains(fName,'project.json'), {parentList.name});
+if any(notesIdx)
+    %get project notes
+    notesFile=fullfile(parentList(notesIdx).folder,parentList(notesIdx).name);
+    notes=jsondecode(fileread(notesFile));
+else
+    disp(['Project notes not found in parent directory of ' fileparts(fileDir)]);
+    notes=struct('Project',[],'Experimenter',[],'Institution',[],'Rig',[]);
 end
 
 %% open file
 fid  = fopen(fullfile(fileDir,[char(xpNotesHeader.SubjectID) '_notes.json']),'w');
 fprintf(fid,'{\r\n');
 
-%% first print header variables
+%% 1. Print project info 
+fprintf(fid,'\t"Dataset": {\r\n');
+str=strrep(jsonencode(notes),',"',sprintf(',\r\n\t\t"'));
+str=strrep(str,'},{',sprintf('\r\n\t\t},\r\n\t\t{'));
+fprintf(fid,'%s%s%s',sprintf('\t\t'), str(2:end-1), sprintf('\r\n\t},\r\n'));
+
+%% 2. Print header variables
 fprintf(fid,'\t"Header": {\r\n');
 str=strrep(jsonencode(xpNotesHeader),',"',sprintf(',\r\n\t\t"'));
 fprintf(fid,'%s%s%s',sprintf('\t\t'), str(3:end-2), sprintf('\r\n\t},\r\n'));
 
-%% then print notes
+%% 3. Print notes
 procedureRange=[];
 fprintf(fid,'\t"Procedures": [\r\n');
 for procNum=1:numel(procedureIdx)
@@ -118,7 +137,10 @@ for procNum=1:numel(procedureIdx)
                 notes=xpNotes.Notes(subprocIdx(subprocNum)+1:subprocRange);
                 notes=[notes{:}];
                 if ~isempty(notes)
-                    fprintf(fid,[',\r\n\t\t\t\t"Extended Notes": "%s"'],notes);
+                    if any(regexp(notes,' '))
+                        notes{1}(regexp(notes,' '))=' '; %remove special "thin space" (non-ASCII character)
+                    end
+                    fprintf(fid,',\r\n\t\t\t\t"Extended Notes": "%s"',notes);
                 end
                 fprintf(fid,'\r\n\t\t\t\t}');
                 if subprocNum<numel(subprocIdx); fprintf(fid,',\r\n'); end
@@ -142,6 +164,9 @@ for procNum=1:numel(procedureIdx)
             % join notes
             notes=strjoin(recMark + sprintf('\t') + depthstr + sprintf(""":\t""") + notes,...
                 '",\r\n\t\t\t"'); %[notes{:}];
+            if any(regexp(notes,' '))
+                notes{1}(regexp(notes,' '))=' '; %remove special "thin space" (non-ASCII character)
+            end
             fprintf(fid,',\r\n\t\t"Extended Notes":{\r\n\t\t\t"%s"}\r\n',notes);
             
             %%   3/ Special case like FO implantation
@@ -165,7 +190,10 @@ for procNum=1:numel(procedureIdx)
                 notes=xpNotes.Notes(subprocIdx(subprocNum)+1:subprocRange);
                 notes=[notes{:}];
                 if ~isempty(notes)
-                    fprintf(fid,[',\r\n\t\t\t\t"Extended Notes": "%s"'],notes);
+                    if any(regexp(notes,' '))
+                        notes{1}(regexp(notes,' '))=' '; %remove special "thin space" (non-ASCII character)
+                    end
+                    fprintf(fid,',\r\n\t\t\t\t"Extended Notes": "%s"',notes);
                 end
                 fprintf(fid,'\r\n\t\t\t\t}');
                 if subprocNum<numel(subprocIdx); fprintf(fid,',\r\n'); end
@@ -205,6 +233,7 @@ for procNum=1:numel(procedureIdx)
                 end
                 % Start entering info into "session"
                 sessions(sessionIds(sessionnNum)).subject=rec.Subject;
+                sessions(sessionIds(sessionnNum)).description= [rec.Session ' session for project goal ' xpNotesHeader.Goal{:}];
                 sessions(sessionIds(sessionnNum)).shortDate=rec.Date;
                 sessions(sessionIds(sessionnNum)).shortNotes=shortNotes;
                 sessions(sessionIds(sessionnNum)).baseName=baseName;
@@ -249,7 +278,7 @@ end
 % close Procedures list
 fprintf(fid,'\t],\r\n');
 
-%% Finally, write down Sessions
+%% 4. Write down Sessions
 if exist('sessions','var')
     % validate files existence
     fileList=dir([fileDir filesep '**' filesep]);

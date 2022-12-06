@@ -7,6 +7,23 @@ function SaveSessionInfo(recInfo, recordingName, rootDir)
 fid  = fopen(fullfile(rootDir,[recordingName '_info.json']),'w');
 fprintf(fid,'{\r\n');
 
+notesFile=fullfile(regexp(rootDir,['.+(?=\' filesep '.+$)'],'match','once'),...
+    [recInfo.subject  '_notes.json']);
+if any(exist(notesFile,'file'))
+    notes=jsondecode(fileread(notesFile));
+    % get info about that session
+    if isfield(notes,'Sessions')
+        sessionIdx=strcmp({notes.Sessions.baseName}, recInfo.baseName);
+        session=notes.Sessions(sessionIdx);
+    else
+        session=[];
+    end
+end
+if ~isempty(session)
+    recInfo.description=session.description;
+else
+    recInfo.description='';
+end
 %% write session info
 fldNames=fieldnames(recInfo);
 for fldNum=1:numel(fldNames)
@@ -25,30 +42,18 @@ ephys=struct('probe', [],'adapter', [],'AP', [], 'ML', [],'depth', [], 'theta', 
 photoStim=struct('protocolNum', [], 'stimPower', [], 'stimFreq', [],...
     'pulseDur', [], 'stimDevice', [], 'trainLength', []);
 
-notesFile=fullfile(regexp(rootDir,['.+(?=\' filesep '.+$)'],'match','once'),...
-    [recInfo.subject  '_notes.json']);
-if any(exist(notesFile,'file'))
-    notes=jsondecode(fileread(notesFile));
-    % get info about that session
-    if isfield(notes,'Sessions')
-        sessionIdx=strcmp({notes.Sessions.baseName}, recInfo.baseName);
-        session=notes.Sessions(sessionIdx);
-    else
-        session=[];
-    end
-    % allocate data
-    if ~isempty(session)
-        ephys=session; ephys=rmfield(ephys,{'subject','baseName','shortDate','fullDate','shortNotes',...
-            'stimPower','stimFreq','pulseDur', 'stimDevice'});ephys=ephys(1);
-        if ~isfield(ephys,'theta'); ephys.theta=[]; end
-        if ~isfield(ephys,'phy'); ephys.phy=[]; end
+% allocate data
+if ~isempty(session)
+    ephys=session; ephys=rmfield(ephys,{'subject','baseName','shortDate','fullDate','shortNotes',...
+        'description','stimPower','stimFreq','pulseDur', 'stimDevice'});ephys=ephys(1);
+    if ~isfield(ephys,'theta'); ephys.theta=[]; end
+    if ~isfield(ephys,'phy'); ephys.phy=[]; end
 
-        photoStim=session; photoStim=rmfield(photoStim,{'subject','baseName',...
-            'shortDate','fullDate','shortNotes',...
-            'probe','adapter','AP', 'ML','depth'});
-        for protocolNum=1:size(photoStim,2) % in case there are multiple stimulation protocols
-            photoStim(protocolNum).protocolNum=protocolNum-1;
-        end
+    photoStim=session; photoStim=rmfield(photoStim,{'subject','baseName',...
+        'shortDate','fullDate','shortNotes','description',...
+        'probe','adapter','AP', 'ML','depth'});
+    for protocolNum=1:size(photoStim,2) % in case there are multiple stimulation protocols
+        photoStim(protocolNum).protocolNum=protocolNum-1;
     end
 end
 
