@@ -1,4 +1,7 @@
 {
+	"description": "32 channels; 1 shank; H6b-series",
+	"manufacturer": "Cambridge Neurotech",
+	"adaptor": "NeuroNexus",
 	"numChannels":	32,
 	"numShank":	1,
 	"surfaceDim":	[15,11],

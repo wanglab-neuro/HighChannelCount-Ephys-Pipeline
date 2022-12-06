@@ -1,4 +1,7 @@
 {
+	"description": "Single electrode; tungsten",
+	"manufacturer": "",
+	"adaptor": "",
 	"numChannels":	1,
 	"numShank":	1,
 	"surfaceDim":	[15,11],

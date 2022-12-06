@@ -1,4 +1,7 @@
 {
+	"description": "32 channels; 2 shanks; P-series",
+	"manufacturer": "Cambridge Neurotech",
+	"adaptor": "Cambridge Neurotech",
 	"numChannels":	32,
 	"numShank":	2,
 	"surfaceDim":	[15,11],

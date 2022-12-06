@@ -1,4 +1,7 @@
 {
+	"description": "16 channels; 1 shank; P-series",
+	"manufacturer": "Cambridge Neurotech",
+	"adaptor": "NeuroNexus",
 	"numChannels":	16,
 	"numShank":	1,
 	"surfaceDim":	[15,11],

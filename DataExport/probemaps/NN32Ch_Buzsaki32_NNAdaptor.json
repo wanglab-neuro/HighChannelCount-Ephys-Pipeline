@@ -1,4 +1,7 @@
 {
+	"description": "32 channels; 4 shanks; Buzsaki32",
+	"manufacturer": "NeuroNexus",
+	"adaptor": "NeuroNexus",
 	"numChannels":	32,
 	"numShank":	4,
 	"surfaceDim":	[16,10],
