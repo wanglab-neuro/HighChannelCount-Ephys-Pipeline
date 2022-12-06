@@ -30,7 +30,7 @@ if nargin==0 ||  isempty(recInfo)
     %define number of channel
     recInfo.numCh=32;
 else
-    if ~isfield(recInfo,ephysExportName) %for backward compatibility
+    if ~isfield(recInfo,'ephysExportName') %for backward compatibility
         recInfo.baseName=recInfo.recordingName;
         dataFile = dir([initDir filesep '**' filesep [recInfo.baseName, '*export*.bin']]);
         recInfo.ephysExportName=dataFile.name(1:end-4);
@@ -112,10 +112,11 @@ end
 cd(exportFolder);
 
 if ~isempty(probeFileName)
-    
-    % copy probe file
     if ~strcmp(probeFileName,'generic')
-        copyfile(fullfile(initDir,probeFileName),fullfile(initDir,exportFolder,probeFileName));
+        % copy probe file if not there yet
+        if ~exist(fullfile(exportFolder,probeFileName),'file')
+            copyfile(fullfile(initDir,probeFileName),fullfile(exportFolder,probeFileName));
+        end
         probeParams.probeFileName=regexp(probeFileName,'\w+(?=\W)','match','once'); % remove file ext
     end
     

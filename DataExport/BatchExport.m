@@ -1,4 +1,7 @@
-function [dataFiles,allRecInfo]=BatchExport(exportDir)
+function [dataFiles,allRecInfo]=BatchExport(exportDir,overWrite,NWBexport)
+
+if nargin<2; overWrite=true; end
+if nargin<3; NWBexport=false; end
 
 % Prepare the export directory
 rootDir=cd;
@@ -25,8 +28,11 @@ dataFiles=vertcat(dataFiles{~cellfun('isempty',dataFiles)});
 fileF=cellfun(@(x) x(end-3:end), {dataFiles.name},'UniformOutput', false);
 if any(cellfun(@(x) contains(x,'.ns'),fileF))
     nsIdx=find(cellfun(@(x) contains(x,'.ns'),fileF));
-    [~,sortIdx]=sort(string(cell2mat(fileF(nsIdx)')),'descend');
-    dataFiles=dataFiles(~ismember(1:numel(dataFiles),nsIdx(sortIdx(2:end))));
+    if numel(unique(fileF(nsIdx)))>1
+    keepFF=sort(string(cell2mat(unique(fileF(nsIdx))')),'descend');keepFF=keepFF(1);
+    [sortFF,sortIdx]=sort(string(cell2mat(fileF(nsIdx)')),'descend');
+    dataFiles=dataFiles(~ismember(1:numel(dataFiles),nsIdx(sortIdx(find(~contains(sortFF,keepFF),1):end))));
+    end
 end
 
 % In case other export / spike sorting has been performed, do not include those files
@@ -165,12 +171,14 @@ for fileNum=1:size(dataFiles,1)
     recInfo.export.directory=fullfile(exportDir,recordingName);
     
     %% save ephys data
-    fileID = fopen([recordingName '_export.bin'],'w');
-    fwrite(fileID,recordings,'int16');
-    fclose(fileID);
-    recInfo.export.binFile=[recordingName '_export.bin'];
-    allRecInfo{fileNum}.ephysExportName=recInfo.export.binFile;
-    
+    if overWrite
+        fileID = fopen([recordingName '_export.bin'],'w');
+        fwrite(fileID,recordings,'int16');
+        fclose(fileID);
+        recInfo.export.binFile=[recordingName '_export.bin'];
+        allRecInfo{fileNum}.ephysExportName=recInfo.export.binFile;
+    end
+
     %% save other data
     if exist('fsData','var') && ~isempty(fsData)
         if ~isfolder(fullfile(dataFiles(fileNum).folder,'FlowSensor'))
@@ -265,7 +273,7 @@ for fileNum=1:size(dataFiles,1)
         copyfile([recordingName '_vSyncTTLs.dat'],fullfile(rootDir,[recordingName '_vSyncTTLs.dat']));
     end
     
-    %% save
+    %% save actuator TTL data
     if exist('actuatorTTL','var') && ~isempty(actuatorTTL) && ~isempty(actuatorTTL(1).start)
         % discard native sr timestamps and convert to seconds if needed
         if any([actuatorTTL.samplingRate]==1)
@@ -292,20 +300,8 @@ for fileNum=1:size(dataFiles,1)
         recInfo.export.actuators_TS={[recordingName '_actuators_TS.dat'];...
             [recordingName '_actuators_TS.csv']}; %[recordingName '_export_trial.mat']};
     end
-    
-    %% try to find likely companion video file
-    if ~isempty(videoFiles)
-        fileComp=cellfun(@(vfileName) intersect(regexp(dataFiles(fileNum).name,'[a-zA-Z0-9]+','match'),...
-            regexp(vfileName,'[a-zA-Z0-9]+','match'),'stable'), {videoFiles.name},'un',0);
-        fileMatchIdx=cellfun(@numel,fileComp)==max(cellfun(@numel,fileComp));
-        if any(fileMatchIdx)==1
-            %likely match
-            recInfo.likelyVideoFile=videoFiles(fileMatchIdx).name;
-        end
-    end
-    
-    
-    %% trial data
+        
+    %% save trial TTL data
     trials = struct('trialNum', [], 'start', [], 'stop', [], 'isphotostim', []);
     if exist('trialTTL','var')
         %
@@ -344,6 +340,17 @@ for fileNum=1:size(dataFiles,1)
     end
     recInfo.trials=trials;
 
+    %% try to find likely companion video file
+    if ~isempty(videoFiles)
+        fileComp=cellfun(@(vfileName) intersect(regexp(dataFiles(fileNum).name,'[a-zA-Z0-9]+','match'),...
+            regexp(vfileName,'[a-zA-Z0-9]+','match'),'stable'), {videoFiles.name},'un',0);
+        fileMatchIdx=cellfun(@numel,fileComp)==max(cellfun(@numel,fileComp));
+        if any(fileMatchIdx)==1
+            %likely match
+            recInfo.likelyVideoFile=videoFiles(fileMatchIdx).name;
+        end
+    end
+   
     %% save data info
     % save as .mat file (will be discontinued)
     save([recordingName '_recInfo'],'recInfo','-v7.3');
@@ -352,6 +359,9 @@ for fileNum=1:size(dataFiles,1)
     SaveSessionInfo(recInfo, recordingName, rootDir)
 
     % TBD: insert session info in pipeline right here
+    if NWBexport
+        FormatToNWB;
+    end
     
 end
 cd ..

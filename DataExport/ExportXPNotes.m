@@ -307,16 +307,21 @@ if exist('sessions','var')
             end
         else
             disp(['File ' sessions(fileNum).baseName ' could not be located']);
+%             continue
         end
         recList=fileList(fileIdx);
         % remove none rec formats first
         recList=recList(~contains(fileFormat(fileIdx),{'.xlsx','.csv','.avi','mp4'}));
+        if ~isempty(recList)
         % then sort by length
         lengthfileName=cellfun(@length, recList);
         sessions(fileNum).baseName=recList{lengthfileName==min(lengthfileName)};
 %         if sum(fileIdx)>1
 %             disp(['Files ' fileList{fileIdx} ' have the same basename']);
 %         end
+        else
+            sessions(fileNum).baseName=lower(sessions(fileNum).baseName);
+        end
     end
 
     fprintf(fid,'\t"Sessions": [ \r\n');

@@ -27,7 +27,6 @@ if exportNotes
     else
         disp('No subject notes found');
     end 
-        
 end
 
 %% Export files with BatchExport
