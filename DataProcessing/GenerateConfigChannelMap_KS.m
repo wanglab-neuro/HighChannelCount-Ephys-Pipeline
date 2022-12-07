@@ -79,8 +79,6 @@ else
     probeParams.probeFileName=probeFileName(1:end-4);
 end
 
-
-
 if isfield(recInfo,'probeLayout')
     probeParams=GenerateProbeParams(probeParams,recInfo);
 else
@@ -103,10 +101,10 @@ else
 end
 
 % define and move to export folder
-if ~exist(recInfo.ephysExportName,'dir')
+if ~exist(recInfo.baseName,'dir')
     exportFolder=initDir; % if not export folder specified, stay in same location
 else
-    exportFolder=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,recInfo.ephysExportName),...
+    exportFolder=dirListing(~cellfun('isempty',cellfun(@(x) strfind(x,recInfo.baseName),...
         {dirListing.name},'UniformOutput',false))).name;
 end
 cd(exportFolder);
@@ -114,8 +112,8 @@ cd(exportFolder);
 if ~isempty(probeFileName)
     if ~strcmp(probeFileName,'generic')
         % copy probe file if not there yet
-        if ~exist(fullfile(exportFolder,probeFileName),'file')
-            copyfile(fullfile(initDir,probeFileName),fullfile(exportFolder,probeFileName));
+        if ~exist(fullfile(initDir,exportFolder,probeFileName),'file')
+            copyfile(fullfile(initDir,probeFileName),fullfile(initDir,exportFolder,probeFileName));
         end
         probeParams.probeFileName=regexp(probeFileName,'\w+(?=\W)','match','once'); % remove file ext
     end
@@ -139,13 +137,13 @@ else
     userParams.useGPU = true;                       % has to be true in KS2+
     userParams.exportDir = cd;
     userParams.tempDir = tempDir;
-    userParams.fproc   = fullfile(userParams.tempDir, [recInfo.ephysExportName '.dat']); % process file on a fast SSD
-    userParams.fbinary = fullfile(userParams.exportDir, [recInfo.ephysExportName '.bin']);
+    userParams.fproc   = fullfile(userParams.tempDir, [recInfo.baseName '.dat']); % process file on a fast SSD
+    userParams.fbinary = fullfile(userParams.exportDir, recInfo.ephysExportName);
     userParams.NchanTOT = numel(probeParams.chanMap);
     userParams.trange = opt.trange;
     userParams.AUCsplit = opt.AUCsplit; % splitting a cluster at the end requires at least this much isolation for each sub-cluster (max = 1)
     userParams.minFR = opt.minFR; % minimum spike rate (Hz), if a cluster falls below this for too long it gets removed
-    [~,~,configFName]=GenerateKSConfigFile(recInfo.ephysExportName,cd,userParams);
+    [~,~,configFName]=GenerateKSConfigFile(recInfo.baseName,cd,userParams);
     
 end
 
