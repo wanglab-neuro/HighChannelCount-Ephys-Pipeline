@@ -1,2 +1,2 @@
 # High Channel Count Ephys Pipeline
-for silicon probe data processing
+This branch is for Neuropixels data processing.
