@@ -30,7 +30,9 @@ dependencies:
     - spikeinterface-gui>=0.4.1
     - tridesclous>=1.6.5
     - phy==2.0b5
-    - docker
+    # Uncomment either line - not both - below if using Docker or Singularity container.  
+    # - docker 
+    # - spython
     - pynwb
     - figurl-jupyter
 
