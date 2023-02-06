@@ -20,7 +20,9 @@ dependencies:
   - loky
   - hdbscan
   - numba
-  - jupyter
+  - jupyterlab
+  - jupytext
+  - jupyterlab-git
   - pyqt=5.12.3
   - pyqtgraph=0.12.4
   - pip:
