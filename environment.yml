@@ -20,7 +20,9 @@ dependencies:
   - loky
   - hdbscan
   - numba
-  - jupyter
+  - jupyterlab
+  - jupytext
+  - jupyterlab-git
   - pyqt=5.12.3
   - pyqtgraph=0.12.4
   - pip:
@@ -30,8 +32,8 @@ dependencies:
     - spikeinterface-gui>=0.4.1
     - tridesclous>=1.6.5
     - phy==2.0b5
-    # Uncomment either line - not both - below if using Docker or Singularity container.  
-    # - docker 
+    # Uncomment either lines - not both - if using Docker or Singularity containers. 
+    # - docker
     # - spython
     - pynwb
     - figurl-jupyter
