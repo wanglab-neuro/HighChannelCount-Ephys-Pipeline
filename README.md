@@ -13,7 +13,13 @@ From the browser window that pops up, run any notebook from that folder.
 
 If running on a computing cluster, 
 * unset the XDG variable: `unset XDG_RUNTIME_DIR`
-* load Singularity (need 3.6+): `module load openmind/singularity/3.6.3` (this is for the Openmind HPCC). 
+* load Anaconda (this is for the Openmind HPCC): 
+```
+source /etc/profile.d/modules.sh
+module use /cm/shared/modulefiles
+module load openmind8/anaconda
+<!-- module load openmind/singularity/3.6.3 -->
+``` 
 * activate the environment: `conda activate si_env`
 * navigate to the notebooks directory, e.g.: `cd /om2/user/$USER/code/HCCE_NPX/notebooks`
 * then start jupyter specifying the part, e.g.: `jupyter lab --ip=0.0.0.0 --port=5000 --no-browser`.
@@ -21,5 +27,23 @@ If running on a computing cluster,
 
 The notebooks will be available on https://localhost:5000/lab
  
+To clear outputs for all notebooks in a directory:
+`pip install nbconvert` (if needed)  
+`find . -name "*.ipynb" -exec jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {} \;`
+`git add .`  
+`git commit -m "Cleared notebook outputs"`  
 
+To run that automatically, add this to .git/hook/pre-commit:  
+```
+#!/bin/sh
 
+# Clear outputs from all notebooks in the repository
+find . -name "*.ipynb" -exec jupyter nbconvert --ClearOutputPreprocessor.enabled=True --inplace {} \;
+
+# Stage the changes made by the clearing of outputs
+git add $(git diff --name-only --cached | grep '\.ipynb$')
+
+# Exit with success
+exit 0
+```
+For Unix systems, make the `pre-commit` file executable: `chmod +x pre-commit`
