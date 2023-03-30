@@ -1,2 +1,10 @@
+# notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
 
+# Apptainer files (former Singularity)
+*.sif
+*.simg
+
+# Other file formats
 *.asv
