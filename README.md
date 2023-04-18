@@ -13,12 +13,13 @@ From the browser window that pops up, run any notebook from that folder.
 
 If running on a computing cluster, 
 * unset the XDG variable: `unset XDG_RUNTIME_DIR`
-* load Anaconda (this is for the Openmind HPCC): 
+* load singularity/apptainer (this is for the Openmind HPCC): 
 ```
 source /etc/profile.d/modules.sh
 module use /cm/shared/modulefiles
-module load openmind8/anaconda
+<!-- module load openmind8/anaconda -->
 <!-- module load openmind/singularity/3.6.3 -->
+
 ``` 
 * activate the environment: `conda activate si_env`
 * navigate to the notebooks directory, e.g.: `cd /om2/user/$USER/code/HCCE_NPX/notebooks`
