@@ -33,26 +33,26 @@ spikeTimestamps = cell(nChannels,1);
 for channelIdx=1:nChannels
     % Get the channel data
     channelData = double(APData.samples(channelIdx,:));
-    
+
     % Compute the rms threshold
     rmsThreshold = 10*median(abs(channelData));
-    
+
     % Find the peaks
     [peakValues, peakIdx] = findpeaks(channelData,'MinPeakHeight',rmsThreshold,'MinPeakProminence',rmsThreshold);
-    
+
     % Get the timestamps of the peaks
     spikeTimestamps{channelIdx} = APData.timestamps(peakIdx);
 
-%     % Plot the channel data and the detected spikes
-%     figure('Name',['Channel ' num2str(channelIdx)], 'Color', 'w', 'Position', [500 100 1000 800])
-%     hold on
-%     plot(APData.timestamps,channelData)
-%     yline(rmsThreshold)
-%     plot(spikeTimestamps{channelIdx},peakValues,'k*')
-%     xlabel('Time (s)')
-%     ylabel('Voltage (uV)')
-%     title(['Channel ' num2str(channelIdx)])
-%     legend('Channel Data','Detected Spikes','Location','Best')
+    %     % Plot the channel data and the detected spikes
+    %     figure('Name',['Channel ' num2str(channelIdx)], 'Color', 'w', 'Position', [500 100 1000 800])
+    %     hold on
+    %     plot(APData.timestamps,channelData)
+    %     yline(rmsThreshold)
+    %     plot(spikeTimestamps{channelIdx},peakValues,'k*')
+    %     xlabel('Time (s)')
+    %     ylabel('Voltage (uV)')
+    %     title(['Channel ' num2str(channelIdx)])
+    %     legend('Channel Data','Detected Spikes','Location','Best')
 
 end
 
@@ -64,63 +64,52 @@ spikeChannelsIdx = find(cellfun(@length,spikeTimestamps) > max(cellfun(@length,s
 traceOffset = 0;
 clearvars yticklabels traceH
 figure('Name','Spike rasters', 'Color', 'w', 'Position', [500 100 1000 800])
-subplot(2,1,1); hold on
+plotH(1) = subplot(2,1,1); hold on
 
-rastersH = cell(length(spikeChannelsIdx),1);
+% plot the rasters as an image, overlayed on the inspiration epochs shown color blocks
+
+% Assign indices of spike times to the rasters image array
+spikeRaster = zeros(length(spikeChannelsIdx),length(breathingFlow));
+
 for channelIdx=1:length(spikeChannelsIdx)
     % Get the channel index
     channel = spikeChannelsIdx(channelIdx);
-    
+
     % Get the spike timestamps
     spikeTimestamps_channel = spikeTimestamps{channel};
-    
-    % Plot the spikes
-    rastersH{channelIdx} = plot(spikeTimestamps_channel,channelIdx*ones(size(spikeTimestamps_channel)),'k.');
 
-    % Increment the trace offset
-    traceOffset = traceOffset + 1;
+    % Assign the spike timestamps to the raster array
+    spikeRaster(channelIdx,ismember(APData.timestamps,spikeTimestamps_channel)) = 1;
 end
 
-% Show only Y ticks labels for traces and set to channel number
-for channelIdx=1:length(spikeChannelsIdx)
-    yticks(channelIdx) = rastersH(channelIdx)
-    yticklabels{channelIdx} = num2str(spikeChannelsIdx(channelIdx));
-end
-% keep only ytick that corresponds to the traces, assign labels
-yticks=yticks(1:channelIdx);
-yticklabels=yticklabels(1:channelIdx);
-set(gca,'YTick',yticks,'YTickLabel',yticklabels)
+EphysFun.PlotRaster(spikeRaster,APData.timestamps,'lines',[],'k'); % added the function below in case this is not in the path
 
-set(gca,'YDir','reverse')
-xlabel('Time (s)')
-ylabel('Channel #')
-title('Rasters of detected spikes')
-
-% % Overlay the inspiration epochs as color blocks
-ylim=get(gca,'ylim');
-heightDiff = ylim(2)-ylim(1);
-
-areaH =  area(analogData.timestamps,ylim(1)*~inspirationEpochs, ylim(1), ...
-        'FaceColor', [1 0.8 0], 'EdgeColor', 'none', 'ShowBaseLine', 'off', 'FaceAlpha', 0.5);
-
-% set the area to the back
-uistack(areaH,'bottom')
-
-% set the area to the back
-uistack(areaH,'bottom')
+% Shift yticks 0.5 down, and assign yticklabels
+set(gca, 'YTick', (1:length(spikeChannelsIdx))-0.5, 'YTickLabel', spikeChannelsIdx,'TickDir','out');
 
 % Plot breathing flow for the same time period
-subplot(2,1,2); hold on
+plotH(2) = subplot(2,1,2); hold on
+
+% % Create image of the inspiration epochs
+% inspEpochImage = repmat(inspirationEpochs,length(spikeChannelsIdx),1);
+% % plot the inspiration epochs as an image with transparency
+% imagesc(inspEpochImage,'AlphaData',0.5)
+% colormap(ax2,'autumn')
+
+
 traceH(channelIdx+1)=plot(analogData.timestamps,breathingFlow);
 % yticks(traceIdx+1) = traceH(traceIdx+1).YData(1);
-set(traceH(traceIdx+1),'Color','k','linewidth',1.5)
+set(traceH(channelIdx+1),'Color','k','linewidth',1.5)
 % yticklabels{traceIdx+1} = 'Breathing Flow';
 set(gca,'YColor','k'); %'YDir','reverse'
 ylabel('Breathing Flow (AU) Inspiration Downward')
+box off
+
+xlabel('Time (s)')
 
 % Add legend for traceH and areaH
-lgdH = legend(areaH,'Inspiration Epochs','Location','Best');
-lgdH.Box = 'off';
+% lgdH = legend(areaH,'Inspiration Epochs','Location','Best');
+% lgdH.Box = 'off';
 
 % bind the x axis
 linkaxes(findall(gcf,'Type','Axes'),'x')
@@ -167,4 +156,40 @@ inspirationEpochs=ismember(1:length(breathingFlow),inspirationEpochs);
 % % plot(breathingFlow_derivative(1:30000))
 % % plot(inspirationEpochs(1:find(inspirationEpochs<30000,1,'last')),-1,'r*')
 % plot(inspirationEpochs(1:30000),'bd')
+end
+
+function PlotRaster(spikeRasters,timeStamps,plotType,plotShift,plotCmap)
+% From HCCE pipeline's EphysFun
+if nargin<5 || isempty(plotCmap); plotCmap='k'; end
+if nargin<4 || isempty(plotShift); plotShift = 0; end
+if nargin<3 || isempty(plotType); plotType='diamonds'; end
+if nargin<2 || isempty(timeStamps); timeStamps=1:size(spikeRasters,2); end
+switch plotType
+    case 'lines'
+        if size(spikeRasters,1)==1; spikeRasters=repmat(spikeRasters,2,1); end
+        [indy, indx] = ind2sub(size(spikeRasters),find(spikeRasters));                          % find row and column coordinates of spikes
+        indx=timeStamps(indx);
+        indy=indy+plotShift;                                                                    % add placement value
+        if size(indx,2) > size(indx,1); indx=permute(indx,[2 1]); indy=permute(indy,[2 1]); end % need columns
+        rs_indx=reshape([indx';indx';nan(size(indx'))],1,numel(indx)*3);                        % reshape x indices double them and intersperce with nans
+        rs_indy=reshape([indy'-1;indy';nan(size(indy'))],1,numel(indx)*3);                      % reshape y indices double them and intersperce with nans
+        line(rs_indx,rs_indy,'color',plotCmap,'LineWidth',1.2);                                 % plot rasters
+    case 'bars' %(deprecated - too heavy on memory)
+        %find row and column coordinates of spikes
+        [indy, indx] = ind2sub(size(spikeRasters),find(spikeRasters));
+        plot([indx';indx'],[indy'-1;indy']+plotShift,'color',plotCmap,'LineStyle','-');% plot rasters
+    case 'diamonds'
+        plot(gca,find(spikeRasters),...
+            ones(1,numel(find(spikeRasters)))*...
+            plotShift,'LineStyle','none',...
+            'Marker','d','MarkerEdgeColor','none',...
+            'MarkerFaceColor',plotCmap,'MarkerSize',4);
+    case 'image'
+        imagesc(gca,0,plotShift,spikeRasters);
+        colormap(gca,plotCmap);
+    case 'stems' % for a single line, otherwise baseline moves every iteration
+        rastH=stem(gca,find(spikeRasters),ones(1,numel(find(spikeRasters)))*plotShift,...
+            'BaseValue',plotShift-1,'Color', plotCmap,'Marker','none');
+        rastBaseH=rastH.BaseLine; rastBaseH.Visible = 'off';
+end
 end
