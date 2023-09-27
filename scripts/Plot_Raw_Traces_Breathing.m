@@ -33,8 +33,8 @@ figure('Name','Raw AP Data', 'Color', 'w', 'Position', [500 100 1000 800])
 hold on
 for traceIdx=1:length(selectedChannels)
     % plot each trace then adjust offset value to shift the next trace
-    traceH(traceIdx) = plot(APData.timestamps(1:10*Fs),APData.samples(selectedChannels(traceIdx),1:10*Fs)+traceOffset);
-    traceOffset = traceOffset + max(APData.samples(selectedChannels(traceIdx),1:10*Fs))-min(APData.samples(selectedChannels(traceIdx),1:10*Fs));
+    traceH(traceIdx) = plot(APData.timestamps(1:10*AP_Fs),APData.samples(selectedChannels(traceIdx),1:10*AP_Fs)+traceOffset);
+    traceOffset = traceOffset + max(APData.samples(selectedChannels(traceIdx),1:10*AP_Fs))-min(APData.samples(selectedChannels(traceIdx),1:10*AP_Fs));
 end
 % Show only Y ticks labels for traces and set to channel number
 for traceIdx=1:length(selectedChannels)
@@ -56,20 +56,20 @@ title('Raw AP Data')
 ylim=get(gca,'ylim');
 heightDiff = ylim(2)-ylim(1);
 
-areaH =  area(analogData.timestamps(1:10*Fs),ylim(1)*~inspirationEpochs(1:10*Fs), ylim(1), ...
+areaH =  area(analogData.timestamps(1:10*analog_Fs),ylim(1)*~inspirationEpochs(1:10*analog_Fs), ylim(1), ...
         'FaceColor', [1 0.8 0], 'EdgeColor', 'none', 'ShowBaseLine', 'off', 'FaceAlpha', 0.5);
 
 % set the area to the back
 uistack(areaH,'bottom')
 
-% area(analogData.timestamps(1:10*Fs),ylim(1)*inspirationPhase(1:10*Fs),'FaceColor', [1 1 0.8], 
+% area(analogData.timestamps(1:10*analog_Fs),ylim(1)*inspirationPhase(1:10*analog_Fs),'FaceColor', [1 1 0.8], 
 % 'EdgeColor', 'none', 'ShowBaseLine', 'off', 'FaceAlpha', 0.5);
 % set the area to the back
 uistack(areaH,'bottom')
 
 % Plot breathing flow for the same time period
 yyaxis right
-traceH(traceIdx+1)=plot(analogData.timestamps(1:10*Fs),breathingFlow(1:10*Fs)+traceOffset);
+traceH(traceIdx+1)=plot(analogData.timestamps(1:10*analog_Fs),breathingFlow(1:10*analog_Fs)+traceOffset);
 yticks(traceIdx+1) = traceH(traceIdx+1).YData(1);
 set(traceH(traceIdx+1),'Color','k','linewidth',1.5)
 % yticklabels{traceIdx+1} = 'Breathing Flow';

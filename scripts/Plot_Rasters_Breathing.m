@@ -19,8 +19,8 @@ AP_Fs=APData.metadata.sampleRate;
 analog_Fs=analogData.metadata.sampleRate; %Should be the same
 
 % Get the inspiration phase of the breathing signal
-[breathingFlow, inspirationEpochs] = get_inspiration_epochs(breathingFlow,analog_Fs);
-
+[breathingFlow, ~] = get_inspiration_epochs(breathingFlow,analog_Fs);
+inspirationEpochs = breathingFlow<0;
 % Get the data type of the AP data stream
 dataType = class(APData.samples);
 breathingFlow = cast(breathingFlow,dataType);
@@ -58,15 +58,6 @@ end
 
 % Find the index of channels with detected spikes (more than 1/10th the number of spikes than the channel with the most spikes)
 spikeChannelsIdx = find(cellfun(@length,spikeTimestamps) > max(cellfun(@length,spikeTimestamps))/10);
-% spikeChannelsIdx = find(~cellfun(@isempty,spikeTimestamps);
-
-% Plot the rasters for spikeChannelsIdx, each raster shifted by enough spacing not to overlap
-traceOffset = 0;
-clearvars yticklabels traceH
-figure('Name','Spike rasters', 'Color', 'w', 'Position', [500 100 1000 800])
-plotH(1) = subplot(2,1,1); hold on
-
-% plot the rasters as an image, overlayed on the inspiration epochs shown color blocks
 
 % Assign indices of spike times to the rasters image array
 spikeRaster = zeros(length(spikeChannelsIdx),length(breathingFlow));
@@ -82,13 +73,33 @@ for channelIdx=1:length(spikeChannelsIdx)
     spikeRaster(channelIdx,ismember(APData.timestamps,spikeTimestamps_channel)) = 1;
 end
 
-EphysFun.PlotRaster(spikeRaster,APData.timestamps,'lines',[],'k'); % added the function below in case this is not in the path
+% Plot the rasters for spikeChannelsIdx, each raster shifted by enough spacing not to overlap
+figure('Name','Spike rasters', 'Color', 'w', 'Position', [500 100 1000 800])
+splotH(1) = subplot(2,1,2); hold on
+selectedChannels=find(ismember(spikeChannelsIdx,[46,95]));
+% Plot 10 seconds of data of the selected channels
+spikeRaster = spikeRaster(:,1:10*AP_Fs);
+% Plot the rasters
+plotH(1) = EphysFun.PlotRaster(spikeRaster(selectedChannels,:),APData.timestamps(1:10*AP_Fs),'lines',[],'k'); % added the function below in case this is not in the path
+% EphysFun.PlotRaster(spikeRaster,APData.timestamps,'lines',[],'k'); % added the function below in case this is not in the path
 
 % Shift yticks 0.5 down, and assign yticklabels
-set(gca, 'YTick', (1:length(spikeChannelsIdx))-0.5, 'YTickLabel', spikeChannelsIdx,'TickDir','out');
+set(gca, 'YTick', (1:length(spikeChannelsIdx(selectedChannels)))-0.5,...
+    'YTickLabel', spikeChannelsIdx(selectedChannels),'TickDir','out');
+ylabel('Channel #')
+
+% Overlay the inspiration epochs as color blocks
+ylim=get(gca,'ylim');
+heightDiff = diff(ylim);
+areaH =  area(analogData.timestamps(1:10*analog_Fs),max(ylim)*inspirationEpochs(1:10*analog_Fs), min(ylim), ...
+        'FaceColor', [1 0.8 0], 'EdgeColor', 'none', 'ShowBaseLine', 'off', 'FaceAlpha', 0.5);
+xlabel('Time (s)')
+% Add legend for traceH and areaH
+lgdH = legend(areaH,'Inspiration Epochs','Location','Best');
+lgdH.Box = 'off';
 
 % Plot breathing flow for the same time period
-plotH(2) = subplot(2,1,2); hold on
+splotH(2) = subplot(2,1,1); hold on
 
 % % Create image of the inspiration epochs
 % inspEpochImage = repmat(inspirationEpochs,length(spikeChannelsIdx),1);
@@ -96,23 +107,17 @@ plotH(2) = subplot(2,1,2); hold on
 % imagesc(inspEpochImage,'AlphaData',0.5)
 % colormap(ax2,'autumn')
 
-
-traceH(channelIdx+1)=plot(analogData.timestamps,breathingFlow);
-% yticks(traceIdx+1) = traceH(traceIdx+1).YData(1);
-set(traceH(channelIdx+1),'Color','k','linewidth',1.5)
-% yticklabels{traceIdx+1} = 'Breathing Flow';
-set(gca,'YColor','k'); %'YDir','reverse'
-ylabel('Breathing Flow (AU) Inspiration Downward')
+% Plot 10 seconds of data of the breathing flow data
+plotH(2) = plot(analogData.timestamps(1:10*analog_Fs),breathingFlow(1:10*analog_Fs));
+% plotH(2) = plot(analogData.timestamps,breathingFlow);
+set(plotH,'Color','k','linewidth',1.5)
+set(gca,'YColor','k','XTickLabel',[],'TickDir','out'); %'XTick', []
+ylabel({'Breathing Flow (AU)';' Inspiration is Downward'})
 box off
+% xlabel('Time (s)')
 
-xlabel('Time (s)')
-
-% Add legend for traceH and areaH
-% lgdH = legend(areaH,'Inspiration Epochs','Location','Best');
-% lgdH.Box = 'off';
-
-% bind the x axis
-linkaxes(findall(gcf,'Type','Axes'),'x')
+% bind the time axis between subplots
+linkaxes(splotH,'x')
 
 function [breathingFlow, inspirationEpochs, breathingFlow_phase, breathingCycles] =...
     get_inspiration_epochs(breathingFlow,analog_Fs)
@@ -130,6 +135,9 @@ breathingFlow_phase=-angle(breathingFlow_hilbert);
 breathingFlow_derivative=[diff(breathingFlow) 0];
 inspirationEpochs=regionprops(breathingFlow_phase < 0 & breathingFlow_derivative<0,'Area','PixelIdxList');
 inspirationEpochs={inspirationEpochs.PixelIdxList};
+% Get the second derivative of the breathing flow
+breathingFlow_derivative2=[diff(breathingFlow_derivative) 0];
+
 % Find the breathing cycles
 breathingCycles = regionprops(breathingFlow_phase>0,'Area','PixelIdxList');
 breathingCycles=cellfun(@(areaIdx) [areaIdx(1) areaIdx(end)],...
@@ -143,8 +151,21 @@ for cycleIdx=1:length(breathingCycles)
     inspirationEpochsIdx(cycleIdx)=find(cellfun(@(insIdx) insIdx(end),inspirationEpochs)...
         <breathingCycles(cycleIdx,1),1,'last');
 end
+
+% Append to the inpiration epoch the adjoining epich where breathingFlow_phase > 0 & breathingFlow_derivative>0
+for cycleIdx=1:length(inspirationEpochsIdx)
+    % find the first late InspirationEpochs that is after the current cycle
+    idxStart=inspirationEpochs{inspirationEpochsIdx(cycleIdx)}(end)+1;
+    lateInspirationEpochsIdx=find(breathingFlow_derivative2(idxStart:end)<0,1,'first')+idxStart-1;
+    
+    % Append the lateInspirationEpochs to the inspirationEpochs
+    inspirationEpochs{inspirationEpochsIdx(cycleIdx)}=...
+        [inspirationEpochs{inspirationEpochsIdx(cycleIdx)}(1):...
+        lateInspirationEpochsIdx];
+end
+    
 % Get the inspiration phase indices
-inspirationEpochs = vertcat(inspirationEpochs{inspirationEpochsIdx});
+inspirationEpochs = horzcat(inspirationEpochs{inspirationEpochsIdx});
 
 % Convert inspirationEpochs to a logical vector
 inspirationEpochs=ismember(1:length(breathingFlow),inspirationEpochs);
@@ -153,12 +174,12 @@ inspirationEpochs=ismember(1:length(breathingFlow),inspirationEpochs);
 % figure; hold on
 % plot(zscore(double(breathingFlow(1:30000))))
 % plot(breathingFlow_phase(1:30000))
-% % plot(breathingFlow_derivative(1:30000))
+% % plot(breathingFlow_derivative2(1:30000)*1000)
 % % plot(inspirationEpochs(1:find(inspirationEpochs<30000,1,'last')),-1,'r*')
 % plot(inspirationEpochs(1:30000),'bd')
 end
 
-function PlotRaster(spikeRasters,timeStamps,plotType,plotShift,plotCmap)
+function lineH = PlotRaster(spikeRasters,timeStamps,plotType,plotShift,plotCmap)
 % From HCCE pipeline's EphysFun
 if nargin<5 || isempty(plotCmap); plotCmap='k'; end
 if nargin<4 || isempty(plotShift); plotShift = 0; end
@@ -173,7 +194,7 @@ switch plotType
         if size(indx,2) > size(indx,1); indx=permute(indx,[2 1]); indy=permute(indy,[2 1]); end % need columns
         rs_indx=reshape([indx';indx';nan(size(indx'))],1,numel(indx)*3);                        % reshape x indices double them and intersperce with nans
         rs_indy=reshape([indy'-1;indy';nan(size(indy'))],1,numel(indx)*3);                      % reshape y indices double them and intersperce with nans
-        line(rs_indx,rs_indy,'color',plotCmap,'LineWidth',1.2);                                 % plot rasters
+        lineH = line(rs_indx,rs_indy,'color',plotCmap,'LineWidth',1.2);                                 % plot rasters
     case 'bars' %(deprecated - too heavy on memory)
         %find row and column coordinates of spikes
         [indy, indx] = ind2sub(size(spikeRasters),find(spikeRasters));
