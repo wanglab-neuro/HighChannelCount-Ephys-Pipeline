@@ -1,23 +1,25 @@
 classdef EphysFun
     methods(Static)
         %% Order and remap traces
+        %%%%%%%%%%%%%%%%%%%%%%%%%
         function traces=OrderTraces(traces,numElectrodes,recDuration,channelMap)
             try
                 traces=reshape(traces,[numElectrodes recDuration]);
             catch
                 traces=reshape(traces',[recDuration numElectrodes]);
-            end           
+            end
             % remap traces
             traces=traces(channelMap,:);
         end
 
         %% Filter traces
+        %%%%%%%%%%%%%%%%
         function traces=FilterTraces(traces,samplingRate,preprocOption)
             if nargin<2; samplingRate=30000; end
             if nargin<3; preprocOption={'CAR','all'}; end
             traces=PreProcData(traces,samplingRate,preprocOption);
         end
-        
+
         %% FindBestUnits
         %%%%%%%%%%%%%%%%
         function bestUnits=FindBestUnits(unitIDs,pctThreshold)
@@ -34,7 +36,7 @@ classdef EphysFun
             bestUnitsIdx=unitFreq>pctThreshold;
             bestUnits=uniqueUnitIDs(bestUnitsIdx); bestUnits=sort(bestUnits);
         end
-        
+
         %% KeepBestUnits
         %%%%%%%%%%%%%%%%
         function [spikes,recordingTraces,keepTraces]=KeepBestUnits(bestUnits,spikes,allTraces)
@@ -49,7 +51,7 @@ classdef EphysFun
             % titularChannels=[10 10 10];
             keepTraces=titularChannels; %14; %[10 14 15];% keepTraces=1:16; %[10 14 15];
             % keepTraces=1:size(allTraces,1);
-            
+
             %% Keep selected recording trace and spike times,
             recordingTraces=allTraces(keepTraces,:); %select the trace to keep
             try
@@ -69,41 +71,50 @@ classdef EphysFun
                 %     preferredElectrode=spikes.preferredElectrode;
             end
         end
-        
+
         %% MakeRasters
         %%%%%%%%%%%%%%
         function [spikeRasters,unitList]=MakeRasters(spikeTimes,unitID,timeUnit,traceLength)
-            %% Bin spike counts in 1ms bins
-            % with Chronux' binning function
-            % foo=binspikes(spikeTimes/double(samplingRate),Fs);
-            % foo=[zeros(round(spikeTimes(1)/double(samplingRate)*Fs)-1,1);foo]; %need to padd with zeroes
-            % With home-made function. Same result, but takes care of the padding.
+            %% Bins spike counts in 1ms bins
             binSize=1;
             if nargin<2; unitID=ones(1,numel(spikeTimes)); end
             if nargin<3; timeUnit=30000; end
             if nargin<4; traceLength=int32(double(max(spikeTimes))/timeUnit*1000); end
             unitList=unique(unitID); unitList=unitList(unitList>0);
             numUnit=numel(unitList);
-            spikeRasters=zeros(numUnit,ceil(traceLength));
+            spikeRasters=nan(numUnit,ceil(traceLength));
             for unitNum=1:numUnit
                 unitIdx=unitID==unitList(unitNum);
-                if contains(class(spikeTimes),'single')
-                    lengthUnitTimeArray=ceil(spikeTimes(find(unitIdx,1,'last'))/single(timeUnit/1000));
-                elseif contains(class(spikeTimes),'int32')
-                    lengthUnitTimeArray=ceil(spikeTimes(find(unitIdx,1,'last'))/int32(timeUnit/1000));
-                elseif contains(class(spikeTimes),'int64')
-                    lengthUnitTimeArray=ceil(spikeTimes(find(unitIdx,1,'last'))/int64(timeUnit/1000));
-                end
-                rasters=EphysFun.DownSampleToMilliseconds(...
-                    spikeTimes(unitIdx),binSize,timeUnit);
+                rasters=EphysFun.BinToMilliseconds(spikeTimes(unitIdx),binSize,timeUnit);
+                % Assign to raster array
                 spikeRasters(unitNum,1:numel(rasters))=rasters;
             end
         end
-        
+
+        %% BinToMilliseconds
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function binnedSpikeTime=BinToMilliseconds(spikeTimeArray,binSize,samplingRate)
+            %% bin spike times in 1ms bins
+            % Set the first spike time to 0
+            spikeTimeArray=spikeTimeArray-spikeTimeArray(1);
+            if length(spikeTimeArray) == 1
+                binnedSpikeTime=1;
+            else
+                % Find the number of bins
+                numBin=ceil(range(spikeTimeArray)/(samplingRate/1000)/binSize);
+                % Find the edges of the bins
+                binEdges=linspace(0,double(range(spikeTimeArray)),numBin+1);
+                % Bin the spike times
+                binnedSpikeTime = histcounts(double(spikeTimeArray), binEdges);
+                % Set spike counts to max 1
+                binnedSpikeTime(binnedSpikeTime>1)=1;
+            end
+        end
+
         %% AlignRasters
         %%%%%%%%%%%%%%%
         function alignedRasters=AlignRasters(binnedSpikes,eventTimes,preAlignWindow,postAlignWindow,SRratio)
-            %% create event aligned rasters 
+            %% create event aligned rasters
             if nargin==2 %define time window limits
                 preAlignWindow=100; postAlignWindow=400;
             end
@@ -134,56 +145,83 @@ classdef EphysFun
             end
             %     figure; imagesc(alignedRasters)
         end
-        
-        %% DownSampleToMilliseconds
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function binnedSpikeTime=DownSampleToMilliseconds(spikeTimeArray,binSize,samplingRate)
-            numBin=ceil(max(spikeTimeArray)/(samplingRate/1000)/binSize);
-            binEdges=linspace(0,double(max(spikeTimeArray)),numBin+1);
-            binnedSpikeTime = histcounts(double(spikeTimeArray), binEdges);
-            binnedSpikeTime(binnedSpikeTime>1)=1;
-        end
-        
-%         spikeTimeIdx=zeros(1,unitST(end));
-%         spikeTimeIdx(unitST)=1;
-%         numBin=ceil(size(spikeTimeIdx,2)/binSize);
-%         binUnits = histcounts(double(unitST), linspace(0,size(spikeTimeIdx,2),numBin));
-%         binUnits(binUnits>1)=1; %no more than 1 spike per ms
-        
-        % figure; hold on
-        % % plot(dsrecordingTrace)
-        % plot(find(binSpikeTimes),ones(length(find(binSpikeTimes)),1)*-250,'r*')
-        % plot(find(foo),ones(length(find(foo)),1)*-200,'g*')
-        
+
+
+
         %% MakeSDF
         %%%%%%%%%%
-        function SDFs_ms=MakeSDF(spikeRasters,sigma)
-            %% Compute sdfs
-            if nargin<2;sigma=5;end
-            SDFs_ms=nan(size(spikeRasters)); %length(unitNum), ceil(size(spikeRasters_ms,2)/samplingRate*1000));
-            for clusterNum=1:size(SDFs_ms,1)
-                SDFs_ms(clusterNum,:)=EphysFun.GaussConv...
-                    (spikeRasters(clusterNum,:),sigma)*1000;
+        function [SDFs, SEMs]=MakeSDF(spikes, sigma, causal, format, unitsIDs, timeBase)
+            % Compute spike density functions (SDFs) from spike times
+            % Spikes "format" can be rasters (i.e., binned binary data), or spiketimes.
+            % If spiketimes, then compute rasters first.
+
+            if nargin<2 || isempty(sigma); sigma = 5; end
+            if nargin<3 || isempty(causal); causal = false; end
+            if nargin<4 || isempty(format); format='rasters'; end
+
+            if strcmp(format,'spiketimes')
+                % Compute rasters
+                if nargin<6 || isempty(timeBase); timeBase=30000; end
+                % if nargin<6; traceLength=int32(double(max(spikes))/timeUnit*1000); end
+                if ~iscell(spikes); spikes={spikes}; end
+                binned_spikes=zeros(numel(spikes), max(cellfun(@(x) ceil(max([1, max(x)/timeBase*1000])), spikes)));
+                for clusterNum=1:numel(spikes) 
+                    if nargin<5 || isempty(unitsIDs); unitIDs=1:size(spikes{clusterNum},1); end
+                    if length(unitsIDs)==1; unitIDs=ones(size(spikes{clusterNum},1),1)*unitsIDs; end
+                    if isempty(spikes{clusterNum}); continue; end
+
+                    raster = EphysFun.MakeRasters(spikes{clusterNum}, unitIDs, timeBase, max([1, range(spikes{clusterNum})/timeBase*1000]));
+                    spike_range_start = ceil(spikes{clusterNum}(1)/timeBase*1000);
+                    binned_spikes(clusterNum, spike_range_start:spike_range_start+numel(raster)-1) = raster;
+                end
+            else
+                binned_spikes=spikes;
             end
-            % figure; hold on
-            % plot(SDFs{1})
-            % plot(find(binSpikeTimes{1}),ones(length(find(binSpikeTimes{1})),1)*-10,'r*')
+
+            % Take care of NaNs in the data
+            if any(isnan(binned_spikes(:)))
+                % use fillmissing to replace NaNs with the mean of the surrounding values
+                binned_spikes=fillmissing(binned_spikes,'linear',2);
+            end
+
+            %% Compute sdfs
+            [SDFs, SEMs]=deal(nan(size(binned_spikes))); %length(unitNum), ceil(size(spikeRasters_ms,2)/samplingRate*1000));
+            for clusterNum=1:size(SDFs,1)
+                SDFs(clusterNum,:)=EphysFun.GaussConv(binned_spikes(clusterNum,:), sigma, causal)*1000;
+            end
+
+            %% Compute SEMs
+            if nargout>1
+                % Multiply SEM by 1.96 to get 95% confidence interval
+                SEMs=std(SDFs)/sqrt(size(SDFs,1));
+            end
+
+            % Average SDFs
+            SDFs = nanmean(SDFs, 1);
+
         end
-        
+
         %% GaussConv
         %%%%%%%%%%%%
         function convTrace=GaussConv(data,sigma,causal)
             %% Convolve trace with gaussian kernel
-            if nargin<2;sigma=5;end 
+            if nargin<2;sigma=5;end
             if nargin<3;causal=false;end
-            size = 6*sigma;
-            width = linspace(-size / 2, size / 2, size);
-            gaussFilter = exp(-width .^ 2 / (2 * sigma ^ 2));
-            gaussFilter = gaussFilter / sum (gaussFilter); % normalize
-            if causal; gaussFilter(x<0)=0; end % causal kernel
+
+            % Create Gaussian filter
+            ksize = round(6*sigma);
+            width = linspace(-ksize / 2, ksize / 2, ksize);
+            gaussFilter = exp(-width .^ 2 / (2 * sigma ^ 2)); %same as normpdf(width,0,sigma);
+            % Normalize the filter to get the same magnitude as the original data
+            gaussFilter = gaussFilter / sum (gaussFilter);
+
+            % Make the filter causal (i.e., no negative time lags)
+            if causal; gaussFilter(width<0)=0; end
+
+            % Convolve data with gaussian filter
             convTrace = conv(data, gaussFilter, 'same');
         end
-        
+
         %% FindRasterIndices
         %%%%%%%%%%%%%%%%%%%%
         function [rasterYInd_ms, rasterXInd_ms]=FindRasterIndices(spikeRasters,unitNum)
@@ -195,7 +233,7 @@ classdef EphysFun
             end
             % rasters=[indx indy;indx indy+1];
         end
-        
+
         %% PlotRaster
         %%%%%%%%%%%%%
         function PlotRaster(spikeRasters,timeStamps,plotType,plotShift,plotCmap)
@@ -204,7 +242,7 @@ classdef EphysFun
             if nargin<3 || isempty(plotType); plotType='diamonds'; end
             if nargin<2 || isempty(timeStamps); timeStamps=1:size(spikeRasters,2); end
             switch plotType
-                case 'lines' 
+                case 'lines'
                     if size(spikeRasters,1)==1; spikeRasters=repmat(spikeRasters,2,1); end
                     [indy, indx] = ind2sub(size(spikeRasters),find(spikeRasters));                          % find row and column coordinates of spikes
                     indx=timeStamps(indx);
@@ -232,32 +270,32 @@ classdef EphysFun
                     rastBaseH=rastH.BaseLine; rastBaseH.Visible = 'off';
             end
         end
-        
+
         %% PlotACG
         %%%%%%%%%%
         function PlotACG(unitsIDs,spikeTimes,selectedUnits,samplingRate,axesH,cmap)
-            if nargin<5; figure; axesH=gca; end     
+            if nargin<5; figure; axesH=gca; end
             if ~exist('cmap','var'); cmap=parula; end
             axes(axesH); hold on; cla(axesH,'reset'); set(axesH,'Visible','on');
             binSize=1/2;
             for unitNum=numel(selectedUnits)
-                unitST=spikeTimes(unitsIDs==selectedUnits(unitNum));%get unit spike times                
+                unitST=spikeTimes(unitsIDs==selectedUnits(unitNum));%get unit spike times
                 unitST=int32(unitST/(samplingRate/1000*binSize));% change to 1/2ms timescale
                 % ISI=diff(unitST)/(samplingRate/1000);%get ISI
-                
-                %% bin spikes                
+
+                %% bin spikes
                 spikeTimeIdx=zeros(1,unitST(end));
                 spikeTimeIdx(unitST)=1;
                 numBin=ceil(size(spikeTimeIdx,2)/binSize);
                 binUnits = histcounts(double(unitST), linspace(0,size(spikeTimeIdx,2),numBin));
                 binUnits(binUnits>1)=1; %no more than 1 spike per bin
-                
+
                 %% compute autocorrelogram
                 [ACG,lags]=xcorr(double(binUnits),200,'unbiased');  %'coeff'
                 ACG(lags==0)=0;
                 ACGh=bar(lags,ACG,'BarWidth', 1.6);
                 ACGh.FaceColor = cmap(selectedUnits,:);
-                ACGh.EdgeColor = cmap(selectedUnits,:); %'none'; 
+                ACGh.EdgeColor = cmap(selectedUnits,:); %'none';
             end
             % axis('tight');
             box off; grid('on'); %set(gca,'yscale','log','GridAlpha',0.25,'MinorGridAlpha',1);
@@ -267,11 +305,11 @@ classdef EphysFun
                 'Color','white','FontSize',10,'FontName','Calibri','TickDir','out');
             hold off
         end
-        
+
         %% PLotISI
         %%%%%%%%%%
         function PLotISI(unitsIDs,spikeTimes,selectedUnits,samplingRate,axesH,cmap)
-            if nargin<5; figure; axesH=gca; end    
+            if nargin<5; figure; axesH=gca; end
             if ~exist('cmap','var'); cmap=parula; end
             axes(axesH); hold on; cla(axesH,'reset'); set(axesH,'Visible','on');
             for unitNum=numel(selectedUnits)

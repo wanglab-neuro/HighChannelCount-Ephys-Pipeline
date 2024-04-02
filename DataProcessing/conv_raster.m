@@ -1,5 +1,17 @@
 function [convsdf, convrasters, convrastsem]=conv_raster(rasters,fsigma,causal,start,stop,normepochFR)
-%raster averaging
+% Raster averaging
+% Inputs:
+% rasters: matrix of spike times (trials x time)
+% fsigma: filter size in ms
+% causal: 0 for non-causal kernel, 1 for causal kernel
+% start: start time of the epoch
+% stop: stop time of the epoch
+% normepochFR: firing rate of the epoch (typically baseline) used for normalization
+
+% Outputs:
+% convsdf: mean firing rate
+% convrasters: convolved rasters
+% convrastsem: standard error of the mean
 
 switch nargin
     case 1
@@ -17,10 +29,10 @@ switch nargin
         meanFR=0;
         stdFR=1;
     case 6
-    %bin-sized calculation of mean and std
-    bsl_bins=reshape(normepochFR,fsigma,length(normepochFR)/fsigma);
-    meanFR=mean(nanmean(bsl_bins,2)); % should be the same as nanmean(normepochFR)
-    stdFR=std(nanmean(bsl_bins,2)); % better std estimate, as std(normepochFR) just overestimates std
+        %bin-sized calculation of mean and std
+        bsl_bins=reshape(normepochFR,fsigma,length(normepochFR)/fsigma);
+        meanFR=mean(nanmean(bsl_bins,2)); % should be the same as nanmean(normepochFR)
+        stdFR=std(nanmean(bsl_bins,2)); % better std estimate, as std(normepochFR) just overestimates std
 end
 
 if ~exist('causal','var')
@@ -36,15 +48,15 @@ convrasters=NaN(size(rasters,1),stop(1)-start(1)-fsigma*6+1);
 % figure;
 % hold on
 for trial=1:size(rasters,1)
-% 	trialnans=isnan(rasters(trial,fsigma*3+start:stop-3*fsigma));
+    % 	trialnans=isnan(rasters(trial,fsigma*3+start:stop-3*fsigma));
     if numel(start)==1
         convrasters(trial,:)=fullgauss_filtconv(rasters(trial,start:stop),fsigma,causal).*1000;
     else
-            convrasters(trial,:)=fullgauss_filtconv(rasters(trial,start(trial):stop(trial)),...
-                fsigma,causal).*1000;
+        convrasters(trial,:)=fullgauss_filtconv(rasters(trial,start(trial):stop(trial)),...
+            fsigma,causal).*1000;
     end
-%     convrasters(trial,trialnans)=NaN;
-%     plot(convrasters(trial,:));
+    %     convrasters(trial,trialnans)=NaN;
+    %     plot(convrasters(trial,:));
 end
 
 % some trials might still fall short
