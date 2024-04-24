@@ -306,6 +306,81 @@ classdef EphysFun
             hold off
         end
 
+        %% PlotACG - log scale
+        %%%%%%%%%%%%%%%%%%%%%%
+        
+        function PlotACG_log(unitsIDs,spikeTimes,selectedUnits,samplingRate,cmap)
+            figure("Color", "white", "Name", "Autocorrelogram", "NumberTitle", "off");
+            hold on;
+            binSize = 0.5; % bin size in milliseconds
+        
+            %  Hide the original axes
+            ax = gca;
+            ax.Visible = 'off';
+        
+            for unitNum = 1:numel(selectedUnits)
+                unitST = spikeTimes(unitsIDs == selectedUnits(unitNum)); % get unit spike times                
+                unitST = int32(unitST/(samplingRate/1000*binSize)); % change to 0.5 ms timescale
+                        
+                %% bin spikes                
+                spikeTimeIdx = zeros(1,unitST(end));
+                spikeTimeIdx(unitST) = 1;
+                numBin = ceil(size(spikeTimeIdx,2)/binSize);
+                binUnits = histcounts(double(unitST), linspace(0,size(spikeTimeIdx,2),numBin));
+                binUnits(binUnits > 1) = 1; % no more than 1 spike per bin
+                        
+                %% compute autocorrelogram
+                [ACG, lags] = xcorr(double(binUnits), 1000, 'unbiased');
+                ACG(lags == 0) = 0; % Remove the zero lag peak for clarity
+                
+                % Separate positive and negative parts
+                posACG = ACG(lags >= 0);
+                negACG = ACG(lags < 0);
+                posLags = lags(lags >= 0) * binSize;
+                negLags = lags(lags < 0) * binSize;
+        
+        
+                %% Plot positive lags
+                ax1 = axes;
+                % display only over the right side
+                ax1.Position = [0.5, 0.1, 0.4, 0.8];
+                bar(ax1, posLags, posACG, 'FaceColor', cmap(unitNum,:), 'EdgeColor', 'none', 'BarWidth', 1.9);
+                set(ax1, 'XScale', 'log', 'Box', 'off');
+                % remove the y-axis entirely
+                set(ax1, 'YTick', [], 'YColor', 'none');
+                %  Set XTicks to start from 0
+                set(ax1, 'XTick', [0.1, 1, 10, 100, 1000], 'XTickLabel', {'0', '1', '10', '100', '1000'});
+                set(ax1, 'Color','white','FontSize',10,'FontName','Calibri','TickDir','out');
+                axis tight;
+        
+                %% Plot negative lags (mirrored)
+                ax2 = axes;
+                % display only over the left side
+                ax2.Position = [0.1, 0.1, 0.4, 0.8];
+        
+                bar(ax2, -negLags, negACG, 'FaceColor', cmap(unitNum,:), 'EdgeColor', 'none','BarWidth', 1.9);
+                set(ax2, 'XScale', 'log', 'XDir', 'reverse', 'Box', 'off');
+                xlabH = xlabel(ax2, 'Time (ms)');
+                %  move the x-axis label to the horizontal center
+                xlabH.Position(1) = 0.3;
+                ylabel(ax2, 'Autocorrelation');
+                %  Set XTicks to start from 0, labelled as negative
+                set(ax2, 'XTick', [0.1, 1, 10, 100, 1000], 'XTickLabel', {'0', '-1', '-10', '-100', '-1000'});
+                set(ax2, 'Color','white','FontSize',10,'FontName','Calibri','TickDir','out');
+        
+                axis tight;
+                % Set x-axis limits to 0 to max, 
+                set([ax1, ax2], 'XLim', [0.1, 10^3]);
+        
+                % Align axes positions vertically
+                ax1.Position(2) = ax2.Position(2);
+        
+                linkaxes([ax1, ax2], 'y'); % Link y-axis for uniform scaling
+                
+            end
+            hold off;
+        end
+
         %% PLotISI
         %%%%%%%%%%
         function PLotISI(unitsIDs,spikeTimes,selectedUnits,samplingRate,axesH,cmap)
