@@ -80,8 +80,10 @@ The following environment variables need modification within the `spike_sort_slu
 - **RESULTS_PATH**: Defines where the pipeline will store the generated output files.
 - **WORK_DIR**: A temporary directory used by the pipeline during execution. It's recommended to utilize the scratch storage for this purpose.
 
-For testing, you can try the example data with `DATA_PATH=/n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/data/sample_data_1/dir1/20240108_M175_4W50_g0_imec0/`.
-
+For testing, you can try the example data with 
+```
+DATA_PATH="/n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/data/sample_data_1/dir1/20240108_M175_4W50_g0_imec0/".
+```
 
 #### 4.b Modifying Slurm Job Options
 
