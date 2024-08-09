@@ -7,7 +7,7 @@ The analysis consists of several steps, as illustrated in the flowchart:
 - Preprocessing
 - Spike sorting
 - Post-processing
-- Visualization.
+- Visualization
 
 All these steps are executed through the Nextflow workflow tool. While the pipeline can handle various data formats like `aind`, `nwb`, and `SpikeGLX`, this guide will focus specifically on `SpikeGLX` data.
 
