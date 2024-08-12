@@ -11,7 +11,7 @@
 DATA_PATH="location_of_your_data_dir"
 WORK_DIR="location_of_your_scratch_directory"
 PIPELINE_PATH="./"
-DATA_PATH="data_dir"
+RESULTS_PATH="./output_dir"
 
 
 INPUT_DATA_TYPE="spikeglx"
