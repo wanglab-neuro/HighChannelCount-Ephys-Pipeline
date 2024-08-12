@@ -138,6 +138,8 @@ tail kilosort-<nodename>.<job-name>.<jobid>.out
 
 ```
 
+For the above sample data, the pipeline executed on the Kempner AI Cluster will be completed in 30 minutes. 
+
 ### 6. Results and Visualization
 
 Upon successful job completion, the output directory will contain various files:
