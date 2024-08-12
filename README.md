@@ -36,21 +36,14 @@ ssh <your username>@login.rc.fas.harvard.edu
 ```
 Please find more information about ways to connect to the cluster in the [handbook](https://kempnerinstitute.github.io/kempner-hpc-handbook/intro.html). 
 
-### 0. Environment Setup
-
-For users running on the cannon cluster, we have cached the containers required for the workflow in a shared directory. For external users, you can use the `environment/pull_singularity_containers.sh` script to pull local copies of 
-the required containers to a location of your choice. The alternative path can then be passed to the nextflow execution script through setting the environment variable `EPHYS_CONTAINER_DIR` to point to that directory.
-
 ### 2. Preparing Input Data
 
 Begin by transferring your experimental data to the cluster. Ensure each experiment's data resides in its own dedicated directory. The expected data structure is:
 
 ```
 data_dir
-└── 20240805_M100_4W50_g0_imec0
     ├── 20240805_M100_4W50_g0_t0.imec0.ap.bin
     └── 20240805_M100_4W50_g0_t0.imec0.ap.meta
-
 ```
 
 ### 3. Copy the Workfow and Job Files
@@ -70,11 +63,11 @@ The relevant job and config files are located in the directory `pipeline`.
 cd kilosort25-spike-sorting/pipeline
 ```
 
-Before submitting the job, the Slurm job file `spike_sort_slurm.slrm` and the nextflow configuration file `nextflow_slurm.config` need to be edited to specify the relevant directory paths and cluster resources. 
+Before submitting the job, the Slurm job file `spike_sort.slrm` and the nextflow configuration file `nextflow_slurm.config` need to be edited to specify the relevant directory paths and cluster resources. 
 
 #### 4.a Setting Up Directory Paths
 
-The following environment variables need modification within the `spike_sort_slurm.slrm` script:
+The following environment variables need modification within the `spike_sort.slrm` script:
 
 - **DATA_PATH**: Specifies the location of your input data.
 - **RESULTS_PATH**: Defines where the pipeline will store the generated output files.
@@ -118,7 +111,7 @@ the required containers to a location of your choice. The alternative path can t
 Once you've made the necessary adjustments, submit the job script using the sbatch command:
 
 ```
-sbatch spike_sort_slurm.slrm
+sbatch spike_sort.slrm
 ```
 
 To track the progress of your submitted job, use the squeue command with your username:
@@ -170,7 +163,6 @@ preprocessing_args:
  --motion {skip,compute,apply} 
  --motion-preset
 ```
-
 
 ### Further details on the pipeline and the links to repositories
 
