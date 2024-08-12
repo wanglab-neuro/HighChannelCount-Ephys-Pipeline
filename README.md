@@ -75,7 +75,7 @@ The following environment variables need modification within the `spike_sort.slr
 
 For testing, you can try the example data with 
 ```
-DATA_PATH="/n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/data/sample_data_1/dir1/20240108_M175_4W50_g0_imec0/".
+DATA_PATH="/n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/data/sample_data_1/dir1/20240108_M175_4W50_g0_imec0/"
 ```
 
 #### 4.b Modifying Slurm Job Options
@@ -94,17 +94,17 @@ clusterOptions = ' -p <partition_name> -A <account_name> --constraint=intel'
 ```
 The nextflow will start all the processes (slurm jobs) in the above parition and account. Without any field in the clusterOptions, the job will utilize the default partition and account. Each process uses the resources set in the file `main_slurm.nf`. The constraint `intel` will restrict the job to run on the intel cpus. 
 
+#### 4.c Environment Setup (optional)
+
+For users running on the cannon cluster, we have cached the containers required for the workflow in a shared directory. For external users, you can use the `environment/pull_singularity_containers.sh` script to pull local copies of 
+the required containers to a location of your choice. The alternative path can then be passed to the nextflow execution script through setting the environment variable `EPHYS_CONTAINER_DIR` to point to that directory.
+
 The following lines in the Slurm script define the software environment required to run the job: 
 ```
 module load Mambaforge/23.11.0-fasrc01
 mamba activate /n/holylfs06/LABS/kempner_shared/Everyone/ephys/software/nextflow_conda
 ```
 It is okay to use the nextflow package in the above path. Alternatively, the nextflow package can be installed in the local directory. 
-
-#### 4.c Environment Setup (optional)
-
-For users running on the cannon cluster, we have cached the containers required for the workflow in a shared directory. For external users, you can use the `environment/pull_singularity_containers.sh` script to pull local copies of 
-the required containers to a location of your choice. The alternative path can then be passed to the nextflow execution script through setting the environment variable `EPHYS_CONTAINER_DIR` to point to that directory.
 
 ### 5. Submitting the Job
 
@@ -117,9 +117,26 @@ sbatch spike_sort.slrm
 To track the progress of your submitted job, use the squeue command with your username:
 
 ```
-squeue -u <username>
+squeue -u <username> -M all
 ```
 
+The standard output and pipeline progress will be stored in the Slurm output file `kilosort-<nodename>.<job-name>.<jobid>.out`. Here is a sample Slurm output file showing the progress of the pipeline. 
+
+```
+tail kilosort-<nodename>.<job-name>.<jobid>.out
+
+[6a/3030e8] process > job_dispatch (capsule-5832718) [100%] 1 of 1 ✔
+[e2/ca6550] process > preprocessing (capsule-4923... [100%] 4 of 4 ✔
+[86/d213f6] process > spikesort_kilosort25 (capsu... [ 50%] 2 of 4
+[-        ] process > postprocessing                 -
+[-        ] process > curation                       -
+[-        ] process > unit_classifier                -
+[-        ] process > visualization                  -
+[-        ] process > results_collector              -
+[60/e53b65] process > nwb_subject (capsule-9109637)  [100%] 1 of 1 ✔
+[-        ] process > nwb_units                      -
+
+```
 
 ### 6. Results and Visualization
 
