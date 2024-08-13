@@ -29,10 +29,7 @@ else
    CONTAINER_DIR=$EPHYS_CONTAINER_DIR
 fi
 
-mkdir ~/.kachery-cloud
-cp /n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/cred/*.pem  ~/.kachery-cloud/.
-chmod 600 ~/.kachery-cloud/private.pem
-export KACHERY_ZONE="kempner"
+/n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/cred/kachery_shared_setup.sh
 
 CONTAINER_DIR=$CONTAINER_DIR DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow  -C $PIPELINE_PATH/nextflow_slurm.config \
     -log $RESULTS_PATH/nextflow.log \
