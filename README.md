@@ -70,8 +70,10 @@ Before submitting the job, the Slurm job file `spike_sort.slrm` and the nextflow
 The following environment variables need modification within the `spike_sort.slrm` script:
 
 - **DATA_PATH**: Specifies the location of your input data.
-- **RESULTS_PATH**: Defines where the pipeline will store the generated output files.
-- **WORK_DIR**: A temporary directory used by the pipeline during execution. It's recommended to utilize the scratch storage for this purpose.
+- **WORK_DIR**: A temporary work directory used by the pipeline during execution. e.g. "./scr_tmp_dir"
+- **RESULTS_PATH**: Defines where the pipeline will store the generated output files. e.g. "./output"
+- **PIPELINE_PATH**: Location of nextflow pipeline and nextflow config files. Usually "./repo_path/pipeline" or "./"
+
 
 For testing, you can try the example data with 
 ```
@@ -150,7 +152,7 @@ data_description.json  preprocessed/   spikesorted/
 ```
 
 
-The visualization_output.json file provides visualizations of timeseries, drift maps, and the sorting output using Figurl. You can refer to the provided sample visualization for reference.
+The `visualization_output.json` file provides visualizations of timeseries, drift maps, and the sorting output using Figurl. You can refer to the provided sample visualization for reference.
 
 
 [sorting_summary](https://figurl.org/f?v=npm://@fi-sci/figurl-sortingview@12/dist&d=sha1://3b0465d83dab9c14210477b5bc690c94c2f0c797&s={%22sortingCuration%22:%22gh://AllenNeuralDynamics/ephys-sorting-manual-curation/main/ecephys_session/block0_imec0.ap_recording1_group1/kilosort2_5/curation.json%22}&label=ecephys_session%20-%20block0_imec0.ap_recording1_group1%20-%20kilosort2_5%20-%20Sorting%20Summary): spike sorting results for visualization and curation
