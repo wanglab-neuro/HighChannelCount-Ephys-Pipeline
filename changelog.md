@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- v1.1 added multijob_submission_wrapper.sh
+- v1.2 added multijob_submission_wrapper.sh
 
 
 ### Changed
