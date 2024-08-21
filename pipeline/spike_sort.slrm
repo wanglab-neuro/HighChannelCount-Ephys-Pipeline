@@ -7,11 +7,12 @@
 #SBATCH --output=kilosort-%N.%x.%j.out
 #SBATCH --error=kilosort-%N.%x.%j.err
 
-
 DATA_PATH="location_of_your_data_dir"
 WORK_DIR="location_of_your_scratch_directory"
 PIPELINE_PATH="./"
 RESULTS_PATH="./output_dir"
+
+
 
 
 INPUT_DATA_TYPE="spikeglx"

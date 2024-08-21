@@ -3,7 +3,7 @@
 #Input argument -  Slurm job description file as the 
 Slurm_file=$1
 
-echo "Generating Job submission files for the input Slurm file $Slurm_file"
+echo "Generating Job submission files from the  Slurm file $Slurm_file"
 
 # Extract the base data and results paths
 top_dir=$(grep "^DATA_PATH" $Slurm_file | sed "s/DATA_PATH=//g" | tr -d '"')
