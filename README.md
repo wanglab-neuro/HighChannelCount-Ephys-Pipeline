@@ -46,6 +46,8 @@ data_dir
     └── 20240805_M100_4W50_g0_t0.imec0.ap.meta
 ```
 
+To process multiple datasets concurrently, check the later section on [processing multiple data directories through a wrapper script](https://github.com/KempnerInstitute/kilosort25-spike-sorting/edit/dmbala-multi-job/README.md#8-processing-multiple-data-directories-through-a-wrapper-script).
+
 ### 3. Copy the Workfow and Job Files
 
 Clone the repository on the cluster. 
@@ -159,6 +161,9 @@ The `visualization_output.json` file provides visualizations of timeseries, drif
 
 [timeseries](https://figurl.org/f?v=npm://@fi-sci/figurl-sortingview@12/dist&d=sha1://f038c09c3465a22bda53e6917e1cfa7ad0afd6f7&label=ecephys_session%20-%20block0_imec0.ap_recording1_group0): Time series results of sorted spikes. 
 
+#### 6a. Clean Up
+
+The temporary files and copy of the results are stored in the work directory. After copying the results and visualization outputs, you can remove them. 
 
 ### 7. Further Analysis and Manual Curation
 
@@ -167,8 +172,24 @@ For manual curation and annotation of your data, you can leverage the Jupyter no
 ```
 postprocess/spike_interface.ipynb
 ```
+### 8. Processing multiple data directories through a wrapper script
 
-#### Additional Pipeline Arguments
+The script multijob_submission_wrapper.sh is designed to submit multiple pipelines simultaneously, offering a convenient alternative to manually preparing a Slurm file for each data directory. In the Slurm file spike_sort.slrm, define the environment variable DATA_PATH as the top-level directory. This directory can contain several subdirectories with data files. Below is an example path you can use for testing:
+
+```
+DATA_PATH="/n/holylfs06/LABS/kempner_shared/Everyone/workflow/kilosort25-spike-sorting/data/sample_data_1"
+
+```
+Lets add executable permission to the wrapper script.
+```
+chmod +x ./multijob_submission_wrapper.sh 
+```
+Run the script with Slurm file as the argument. 
+
+```
+./multijob_submission_wrapper.sh spike_sort.slrm 
+```
+### 9. Additional Pipeline Arguments
 
 These are the job arguments you can tune for a given job. 
 ```
@@ -184,6 +205,8 @@ preprocessing_args:
  --motion {skip,compute,apply} 
  --motion-preset
 ```
+
+
 
 ### Further details on the pipeline and the links to repositories
 
