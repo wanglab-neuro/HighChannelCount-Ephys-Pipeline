@@ -46,6 +46,8 @@ data_dir
     └── 20240805_M100_4W50_g0_t0.imec0.ap.meta
 ```
 
+To process multiple datasets concurrently, check the later section on [processing multiple data directories through a wrapper script](https://github.com/KempnerInstitute/kilosort25-spike-sorting/edit/dmbala-multi-job/README.md#8-processing-multiple-data-directories-through-a-wrapper-script).
+
 ### 3. Copy the Workfow and Job Files
 
 Clone the repository on the cluster. 
@@ -170,24 +172,7 @@ For manual curation and annotation of your data, you can leverage the Jupyter no
 ```
 postprocess/spike_interface.ipynb
 ```
-
-#### Additional Pipeline Arguments
-
-These are the job arguments you can tune for a given job. 
-```
-job_dispatch_args: 
- --concatenate  
- --input {aind,spikeglx,nwb}
-
-preprocessing_args: 
- --denoising {cmr,destripe} 
- --no-remove-out-channels 
- --no-remove-bad-channels 
- --max-bad-channel-fraction  
- --motion {skip,compute,apply} 
- --motion-preset
-```
-### Processing multiple data directories through a wrapper script
+### 8. Processing multiple data directories through a wrapper script
 
 The script multijob_submission_wrapper.sh is designed to submit multiple pipelines simultaneously, offering a convenient alternative to manually preparing a Slurm file for each data directory. In the Slurm file spike_sort.slrm, define the environment variable DATA_PATH as the top-level directory. This directory can contain several subdirectories with data files. Below is an example path you can use for testing:
 
@@ -204,6 +189,23 @@ Run the script with Slurm file as the argument.
 ```
 ./multijob_submission_wrapper.sh spike_sort.slrm 
 ```
+### 9. Additional Pipeline Arguments
+
+These are the job arguments you can tune for a given job. 
+```
+job_dispatch_args: 
+ --concatenate  
+ --input {aind,spikeglx,nwb}
+
+preprocessing_args: 
+ --denoising {cmr,destripe} 
+ --no-remove-out-channels 
+ --no-remove-bad-channels 
+ --max-bad-channel-fraction  
+ --motion {skip,compute,apply} 
+ --motion-preset
+```
+
 
 
 ### Further details on the pipeline and the links to repositories
