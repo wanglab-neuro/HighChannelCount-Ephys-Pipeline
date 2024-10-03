@@ -1,6 +1,10 @@
 # High Channel Count Ephys Pipeline
 This branch is for Neuropixels data processing.
 
+Useful links:
+* [SpikeInterface](https://spikeinterface.readthedocs.io/en/latest/index.html)
+* [IBL pipeline and protocols](https://www.internationalbrainlab.com/repro-ephys)
+
 ### Installation 
 Create a `si_env` conda environment using:
 `conda env create -f environment.yml`
