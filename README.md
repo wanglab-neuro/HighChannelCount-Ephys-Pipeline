@@ -319,10 +319,12 @@ To use Figurl cloud visualizations, follow the same steps descrived in the
 Then, you can submit the pipeline to the cluster similarly to the Local deplyment, 
 but wrapping the command into a script that can be launched with `sbatch`.
 
-To avoid downloading the Docker images in the current location (usually the home folder),
+To avoid downloading the container images in the current location (usually the home folder),
 you can set the `NXF_SINGULARITY_CACHEDIR` environment variable to a different location.
 
 You can use the `slurm_submit.sh` script as a template to submit the pipeline to your cluster.
+It is recommended to also make a copy of the `pipeline/nextflow_slurm.config` file and modify the `queue` parameter to match the partition you want to use on your cluster. In this example, we assume the copy is called 
+`pipeline/nextflow_slurm_custom.config`.
 
 ```bash
 #!/bin/bash
@@ -344,7 +346,7 @@ RESULTS_PATH="path-to-results-folder"
 WORKDIR="path-to-large-workdir"
 
 NXF_VER=22.10.8 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
-    -C $PIPELINE_PATH/pipeline/nextflow_slurm.config \
+    -C $PIPELINE_PATH/pipeline/nextflow_slurm_custom.config \
     -log $RESULTS_PATH/nextflow/nextflow.log \
     run $PIPELINE_PATH/pipeline/main_slurm.nf \
     -work-dir $WORKDIR \
@@ -354,7 +356,7 @@ NXF_VER=22.10.8 DATA_PATH=$DATA_PATH RESULTS_PATH=$RESULTS_PATH nextflow \
 
 > [!IMPORTANT]
 > You should change the `--partition` parameter to match the partition you want to use on your cluster. 
-> The same partition should be also indicated as the `queue` argument in the `pipeline/nextflow_slurm.config` file!
+> The same partition should be also indicated as the `queue` argument in the `pipeline/nextflow_slurm_custom.config` file!
 
 Then, you can submit the script to the cluster with:
 

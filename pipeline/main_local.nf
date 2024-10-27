@@ -477,7 +477,7 @@ process visualization {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-visualization.git" capsule-repo
-	git -C capsule-repo checkout 8b8fc1f4db2ffbb2bab3bbd87d6eb4cd1da761c6 --quiet
+	git -C capsule-repo checkout a98261334e7547a761ba26eaecf4c7e2e7e4a0da --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -522,10 +522,9 @@ process results_collector {
 	mkdir -p capsule/scratch
 
 	echo "[${task.tag}] cloning git repo..."
-	echo "KACHERY_ZONE: $KACHERY_ZONE"
 
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-results-collector.git" capsule-repo
-	git -C capsule-repo checkout 2dcc8b7d9089d2c0069aa163b6be8992b02628a5 --quiet
+	git -C capsule-repo checkout dea3ac29ac8e82322b2a4488b56b6720861cc80a --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
