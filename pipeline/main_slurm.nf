@@ -533,7 +533,7 @@ process visualization {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-visualization.git" capsule-repo
-	git -C capsule-repo -c core.fileMode=false checkout a98261334e7547a761ba26eaecf4c7e2e7e4a0da --quiet
+	git -C capsule-repo -c core.fileMode=false checkout 2dd819b089f96168b36005e5adf709a1c662b461 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 

@@ -118,6 +118,10 @@ The `sorting_curated` object contains the following curation properties (which c
 
 This folder contains the generated NWB files. One NWB file is generated for each block (i.e, Open Ephys experiment) and segment (i.e, Open Ephys recording). The NWB file includes all streams (probes) that are part of the block/segment, with session/subject information, ecephys metadata (electrodes, electrode groups), LFP signals, and Units.
 
+**`visualization`**
+
+This folder contains figures for drift maps, motion, and sample traces for all streams.
+
 **`visualization_output.json`**
 
 This JSON file containes the generated Figurl links for each stream, including a `timeseries` and a `sorting_summary` 
