@@ -28,23 +28,69 @@ else
 }
 println "Using SORTER: ${sorter}"
 
+// set runmode
+if ("runmode" in params_keys) {
+	runmode = params.runmode
+}
+else
+{
+	runmode = "full"
+}
+println "Using RUNMODE: ${runmode}"
+
 if (!params_keys.contains('job_dispatch_args')) {
-	params.job_dispatch_args = ""
+	job_dispatch_args = ""
+}
+else {
+	job_dispatch_args = params.job_dispatch_args
 }
 if (!params_keys.contains('preprocessing_args')) {
-	params.preprocessing_args = ""
+	preprocessing_args = ""
+}
+else {
+	preprocessing_args = params.preprocessing_args
 }
 if (!params_keys.contains('spikesorting_args')) {
-	params.spikesorting_args = ""
+	spikesorting_args = ""
+}
+else {
+	spikesorting_args = params.spikesorting_args
 }
 if (!params_keys.contains('postprocessing_args')) {
-	params.postprocessing_args = ""
+	postprocessing_args = ""
+}
+else {
+	postprocessing_args = params.postprocessing_args
+}
+if (!params_keys.contains('unit_classifier_args')) {
+	unit_classifier_args = ""
+}
+else {
+	unit_classifier_args = params.unit_classifier_args
 }
 if (!params_keys.contains('nwb_subject_args')) {
-	params.nwb_subject_args = ""
+	nwb_subject_args = ""
+}
+else {
+	nwb_subject_args = params.nwb_subject_args
 }
 if (!params_keys.contains('nwb_ecephys_args')) {
-	params.nwb_ecephys_args = ""
+	nwb_ecephys_args = ""
+}
+else {
+	nwb_ecephys_args = params.nwb_ecephys_args
+}
+
+if (runmode == 'fast'){
+	preprocessing_args = "--motion skip"
+	postprocessing_args = "--skip-extensions spike_locations,principal_components"
+	unit_classifier_args = "--skip-metrics-recomputation"
+	nwb_ecephys_args = "--skip-lfp"
+	println "Running in fast mode. Setting parameters:"
+	println "preprocessing_args: ${preprocessing_args}"
+	println "postprocessing_args: ${postprocessing_args}"
+	println "unit_classifier_args: ${unit_classifier_args}"
+	println "nwb_ecephys_args: ${nwb_ecephys_args}"
 }
 
 
@@ -145,7 +191,7 @@ process job_dispatch {
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.job_dispatch_args}
+	./run ${job_dispatch_args}
 
 	max_duration_min=\$(python get_max_recording_duration_min.py)
 	echo "MAX DURATION: \$max_duration_min"
@@ -193,7 +239,7 @@ process preprocessing {
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.preprocessing_args} --n-jobs ${n_jobs}
+	./run ${preprocessing_args} --n-jobs ${n_jobs}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -229,14 +275,14 @@ process spikesort_kilosort25 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25.git" capsule-repo
-	git -C capsule-repo checkout c7b2d11ea0c258a0d07c28c105d365553ccfaf43 --quiet
+	git -C capsule-repo checkout 8c8987260a27c75b1f523d306b40a16962a97ea6 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.spikesorting_args} --n-jobs ${n_jobs}
+	./run ${spikesorting_args} --n-jobs ${n_jobs}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -272,14 +318,14 @@ process spikesort_kilosort4 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort4.git" capsule-repo
-	git -C capsule-repo checkout 2183dc930959c4e8007f7a8fbcc04f0fc72648ab --quiet
+	git -C capsule-repo checkout 6b4e6cd5bf90e05be7ce7e2de9a28f4dcfa02c29 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.spikesorting_args} --n-jobs ${n_jobs}
+	./run ${spikesorting_args} --n-jobs ${n_jobs}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -315,14 +361,14 @@ process spikesort_spykingcircus2 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-spykingcircus2.git" capsule-repo
-	git -C capsule-repo checkout 6f4ea112127d1727ba81040cf1563bcf9a40ca7d --quiet
+	git -C capsule-repo checkout 1f88d6741e33bf9a0e6e23107c64f3c7ad17b5e4 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.spikesorting_args} --n-jobs ${n_jobs}
+	./run ${spikesorting_args} --n-jobs ${n_jobs}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -360,14 +406,14 @@ process postprocessing {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing.git" capsule-repo
-	git -C capsule-repo checkout f63b9b16c5ababd75826445f1f71a44298feeff2 --quiet
+	git -C capsule-repo checkout 1bcc57e0b6be45dc39afd3ef18e0ad678173cc2e --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.postprocessing_args} --n-jobs ${n_jobs}
+	./run ${postprocessing_args} --n-jobs ${n_jobs}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -434,14 +480,14 @@ process unit_classifier {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-unit-classifier.git" capsule-repo
-	git -C capsule-repo checkout 0231bdaa9cb1a812e55b0c938167049ba0ea62fe --quiet
+	git -C capsule-repo checkout a5f1e947c7099090cca2c8250b9bad0b796a67dd --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run
+	./run ${unit_classifier_args}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -477,7 +523,7 @@ process visualization {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-visualization.git" capsule-repo
-	git -C capsule-repo checkout bc4a6b7ed63624f7f1b280c0e23cf82cf330ae6a --quiet
+	git -C capsule-repo checkout f58ab7cda7757b4703da049a160a5677c2cd9c54 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -524,7 +570,7 @@ process results_collector {
 	echo "[${task.tag}] cloning git repo..."
 
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-results-collector.git" capsule-repo
-	git -C capsule-repo checkout dea3ac29ac8e82322b2a4488b56b6720861cc80a --quiet
+	git -C capsule-repo checkout 73cb90e9c321a6c06012681ca08d93b71e99d952 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -567,7 +613,7 @@ process nwb_subject {
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.nwb_subject_args}
+	./run ${nwb_subject_args}
 
 	echo "[${task.tag}] completed!"
 	"""
@@ -605,7 +651,7 @@ process nwb_ecephys {
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
-	./run ${params.nwb_ecephys_args}
+	./run ${nwb_ecephys_args}
 
 	echo "[${task.tag}] completed!"
 	"""

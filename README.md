@@ -145,8 +145,9 @@ In Nextflow, the The `-resume` argument enables the caching mechanism.
 The following global parameters can be passed to the pipeline:
 
 ```bash
---n_jobs N_JOBS (for local deployment, how many jobs to run in parallel)
---sorter {kilosort25,kilosort4,spykingcircus2}
+--n_jobs N_JOBS    For local deployment, how many jobs to run in parallel
+--sorter {kilosort25,kilosort4,spykingcircus2}   Which sorter to use
+--runmode {full,fast}   The runmode to use. Default is 'fThe 'fast' mode skips some steps (e.g., motion correction) to speed up the processing. Default is 'full'
 ```
 
 ## Process-specific parameters
