@@ -1,9 +1,9 @@
 # Releases
 
-## 0.2.0 - September 2024
+## si-0.101.2 - November 2024
 
 ### Package versions:
-* `spikeinterface` version: 0.101.1
+* `spikeinterface` version: 0.101.2
 * `aind-data-schema` version: 1.0.0
 
 ### Bug fixes:
@@ -17,8 +17,8 @@
 * Motion correction now uses `dredge_fast` as default and handles multi-segment recordings (which are concatenated before motion correction).
 * Added option to `split_groups` in `job_dispatch` to process different groups independently.
 
-## 0.1.0 - February 2024
+## si-0.100.7 - February 2024
 
 ### Package versions:
-* `spikeinterface`: 0.100.8
+* `spikeinterface`: 0.100.7
 * `aind-data-schema`: 0.38.5
