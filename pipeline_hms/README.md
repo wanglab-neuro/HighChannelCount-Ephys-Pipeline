@@ -1,7 +1,7 @@
 
-# Neuropixel Ephys Spike Sorting Pipeline on Kempner AI Cluster
+# Neuropixel Ephys Spike Sorting Pipeline on Harvard Medical School O2 Cluster
 
-This document outlines the workflow for performing spike sorting on electrophysiological recorded data using Kilosort2.5 method on Kempner AI cluster. This pipeline is a derivative of the one available at [Allen Neural Dynamics GitHub]( https://github.com/AllenNeuralDynamics/aind-ephys-pipeline-kilosort25).
+This document outlines the workflow for performing spike sorting on electrophysiological recorded data using Kilosort2.5 method on O2. This pipeline is a derivative of the one available at [Allen Neural Dynamics GitHub]( https://github.com/AllenNeuralDynamics/aind-ephys-pipeline-kilosort25).
 
 The analysis consists of several steps, as illustrated in the flowchart:
 - Preprocessing
@@ -17,7 +17,7 @@ All these steps are executed through the Nextflow workflow tool. While the pipel
 
 ## Slurm Job Submission
 
-These are are major steps to run the nextflow pipeline on the Kempner AI 
+These are are major steps to run the nextflow pipeline on the HMS O2 
 Cluster.
 
 1. Log in to the AI cluster
@@ -30,11 +30,11 @@ Cluster.
 
 ### 1. Connect to the AI Cluster
 
-Connect to the AI Cluster using the SSH
+Connect to the O2 Cluster using the SSH
 ```
-ssh <your username>@login.rc.fas.harvard.edu
+ssh <your username>@o2.hms.harvard.edu
 ```
-Please find more information about ways to connect to the cluster in the [handbook](https://kempnerinstitute.github.io/kempner-hpc-handbook/intro.html). 
+Please find more information about ways to connect to the cluster in the [O2 Documentation](https://harvardmed.atlassian.net/wiki/spaces/O2/pages). 
 
 ### 2. Preparing Input Data
 
@@ -62,7 +62,7 @@ git clone https://github.com/KempnerInstitute/kilosort25-spike-sorting
 The relevant job and config files are located in the directory `pipeline`. 
 
 ```
-cd kilosort25-spike-sorting/pipeline
+cd kilosort25-spike-sorting/pipeline_hms_o2
 ```
 
 Before submitting the job, the Slurm job file `spike_sort.slrm` and the nextflow configuration file `nextflow_slurm.config` need to be edited to specify the relevant directory paths and cluster resources. 
@@ -142,7 +142,7 @@ tail kilosort-<nodename>.<job-name>.<jobid>.out
 
 ```
 
-For the above sample data, the pipeline executed on the Kempner AI Cluster will be completed in 30 minutes. 
+For the above sample data, the pipeline executed on the O2 Cluster will be completed in 60-120 minutes. 
 
 ### 6. Results and Visualization
 
