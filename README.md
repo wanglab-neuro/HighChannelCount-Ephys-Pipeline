@@ -1,7 +1,7 @@
 
 # Neuropixel Ephys Spike Sorting Pipeline on Kempner AI Cluster
 
-This document outlines the workflow for performing spike sorting on electrophysiological recorded data using Kilosort2.5 method on Kempner AI cluster. This pipeline is a derivative of the one available at [Allen Neural Dynamics GitHub]( https://github.com/AllenNeuralDynamics/aind-ephys-pipeline-kilosort25).
+This document outlines the workflow for performing spike sorting on electrophysiological recorded data using Kilosort2.5 method on Kempner AI cluster. Please refer [HMS Cluster](HMS-cluster/README.md) if you plan to use Harvard Medical School's O2 Cluster.  This pipeline is a derivative of the one available at [Allen Neural Dynamics GitHub]( https://github.com/AllenNeuralDynamics/aind-ephys-pipeline-kilosort25).
 
 The analysis consists of several steps, as illustrated in the flowchart:
 - Preprocessing
@@ -18,7 +18,7 @@ All these steps are executed through the Nextflow workflow tool. While the pipel
 ## Slurm Job Submission
 
 These are are major steps to run the nextflow pipeline on the Kempner AI 
-Cluster. Please refer [HMS Cluster](HMS-cluster/README.md) if you will use Harvard Medical School's O2 Cluster. 
+Cluster. Please refer [HMS Cluster](HMS-cluster/README.md) if you plan to use Harvard Medical School's O2 Cluster. 
 
 1. Log in to the AI cluster
 2. Prepare input data
