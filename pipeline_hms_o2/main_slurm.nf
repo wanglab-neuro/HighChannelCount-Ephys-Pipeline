@@ -42,7 +42,7 @@ process job_dispatch {
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 4
-	memory '128 GB'
+	memory '8 GB'
 	time '1h'
 
 	input:
@@ -83,8 +83,8 @@ process preprocessing {
 	tag 'capsule-4923505'
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
-	cpus 16
-	memory '128 GB'
+	cpus 8
+	memory '64 GB'
 	time '4h'
 
 	input:
@@ -126,12 +126,11 @@ process preprocessing {
 process spikesort_kilosort25 {
 	tag 'capsule-2633671'
 	container 'file:///${CONTAINER_DIR}/aind-ephys-spikesort-kilosort25_si-0.100.7.sif'
-	containerOptions '--nv'
-	clusterOptions '--gres=gpu:1'
-	module 'cuda'
+	containerOptions ' --nv'
+	clusterOptions '-p gpu --gres=gpu:1'
 
-	cpus 16
-	memory '128 GB'
+	cpus 4 
+	memory '32 GB'
 	time '4h'
 
 	input:
@@ -152,6 +151,7 @@ process spikesort_kilosort25 {
 	mkdir -p capsule/results
 	mkdir -p capsule/scratch
 
+	#module load cuda/12.1
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25.git" capsule-repo
 	git -C capsule-repo checkout 8ad5241757e02effa84a05c5022b17cde01eadff --quiet
@@ -173,8 +173,8 @@ process postprocessing {
 	tag 'capsule-5473620'
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
-	cpus 16
-	memory '128 GB'
+	cpus 4
+	memory '16 GB'
 	time '4h'
 
 	input:
@@ -219,7 +219,7 @@ process curation {
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 1
-	memory '32 GB'
+	memory '8 GB'
 	time '10min'
 
 	input:
@@ -259,8 +259,8 @@ process unit_classifier {
 	tag 'capsule-3820244'
 	container 'file:///${CONTAINER_DIR}/aind-ephys-unit-classifier_si-0.100.7.sif'
 
-	cpus 8
-	memory '128 GB'
+	cpus 4
+	memory '16GB'
 	time '30min'
 
 	input:
@@ -301,7 +301,7 @@ process visualization {
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 4
-	memory '128 GB'
+	memory '16 GB'
 	time '2h'
 
 	input:
@@ -346,7 +346,7 @@ process results_collector {
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 4
-	memory '128 GB'
+	memory '16 GB'
 	time '1h'
 
 	publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }
@@ -395,7 +395,7 @@ process nwb_subject {
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-nwb_si-0.100.7.sif'
 
 	cpus 4
-	memory '128 GB'
+	memory '16 GB'
 	time '10min'
 
 	input:
@@ -420,6 +420,8 @@ process nwb_subject {
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
+
+
 	echo "[${task.tag}] running capsule..."
 	cd capsule/code
 	chmod +x run
@@ -435,7 +437,7 @@ process nwb_units {
 	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-nwb_si-0.100.7.sif'
 
 	cpus 4
-	memory '128 GB'
+	memory '16 GB'
 	time '2h'
 
 	publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }
@@ -461,8 +463,7 @@ process nwb_units {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/NWB_Packaging_Units.git" capsule-repo
-        git -C capsule-repo checkout ba80069df2bd0cea5ce771976fde4de462cccbde --quiet
-
+	git -C capsule-repo checkout ba80069df2bd0cea5ce771976fde4de462cccbde --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
