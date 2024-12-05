@@ -50,7 +50,7 @@ To process multiple datasets concurrently, check the later section on [processin
 
 ### 3. Copy the Workfow and Job Files
 
-Clone the repository on the cluster. 
+If you have already cloned the github repo, you can skip this step. Clone the repository on the cluster.
 
 ```
 git clone https://github.com/KempnerInstitute/kilosort25-spike-sorting
