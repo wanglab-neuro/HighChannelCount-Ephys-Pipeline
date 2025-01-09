@@ -184,7 +184,7 @@ process job_dispatch {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-job-dispatch.git" capsule-repo
-	git -C capsule-repo checkout d6bdb9cc02d6711790a5c406cd50c1434074b5e2 --quiet
+	git -C capsule-repo checkout e86186dc31e33e5326648f2a28d5e780253e153a --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -232,7 +232,7 @@ process preprocessing {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-preprocessing.git" capsule-repo
-	git -C capsule-repo checkout 8b993d495e6230b6b2aabfd4acff364679e864b8 --quiet
+	git -C capsule-repo checkout 18ea0a8c22a3ea65af265d7912bf0ddcd88d61c5 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -275,7 +275,7 @@ process spikesort_kilosort25 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort25.git" capsule-repo
-	git -C capsule-repo checkout 8c8987260a27c75b1f523d306b40a16962a97ea6 --quiet
+	git -C capsule-repo checkout 89de53271ed4fffcc5502fd07f9c6ad9d9d8f53a --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -318,7 +318,7 @@ process spikesort_kilosort4 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-kilosort4.git" capsule-repo
-	git -C capsule-repo checkout 6b4e6cd5bf90e05be7ce7e2de9a28f4dcfa02c29 --quiet
+	git -C capsule-repo checkout 06c2da8f5ca00ba78bf6d9d841bf3d1bacf6fb03 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -335,7 +335,6 @@ process spikesort_kilosort4 {
 process spikesort_spykingcircus2 {
 	tag 'spikesort-spykingcircus2'
 	container 'ghcr.io/allenneuraldynamics/aind-ephys-spikesort-spykingcircus2:si-0.101.2'
-	containerOptions '--shm-size 1g'
 	maxForks 1
 
 	input:
@@ -361,7 +360,7 @@ process spikesort_spykingcircus2 {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-spikesort-spykingcircus2.git" capsule-repo
-	git -C capsule-repo checkout 1f88d6741e33bf9a0e6e23107c64f3c7ad17b5e4 --quiet
+	git -C capsule-repo checkout 2f561b46ab54f462af75833fe042ab6f62f673f4 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -379,7 +378,6 @@ process spikesort_spykingcircus2 {
 process postprocessing {
 	tag 'postprocessing'
 	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
-	containerOptions '--shm-size 1g'
 	maxForks 1
 
 	input:
@@ -406,7 +404,7 @@ process postprocessing {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-postprocessing.git" capsule-repo
-	git -C capsule-repo checkout 1bcc57e0b6be45dc39afd3ef18e0ad678173cc2e --quiet
+	git -C capsule-repo checkout 232c93ba405ab29e059fff4361c0e2535541e2a9 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -443,7 +441,7 @@ process curation {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-curation.git" capsule-repo
-	git -C capsule-repo checkout a8d31a85ceeedb903f19c5b8476cdaf8a8b750e6 --quiet
+	git -C capsule-repo checkout 23cc0bceadb86f1bacf1cbbd3c0533515a12018e --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -480,7 +478,7 @@ process unit_classifier {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-unit-classifier.git" capsule-repo
-	git -C capsule-repo checkout a5f1e947c7099090cca2c8250b9bad0b796a67dd --quiet
+	git -C capsule-repo checkout f63d867b582d2ea199db50ac1c4867fe6f578dde --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -523,7 +521,7 @@ process visualization {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-visualization.git" capsule-repo
-	git -C capsule-repo checkout f58ab7cda7757b4703da049a160a5677c2cd9c54 --quiet
+	git -C capsule-repo checkout d59e005fc75dbfbb9a3966a61aefde8b61f8f422 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -570,7 +568,7 @@ process results_collector {
 	echo "[${task.tag}] cloning git repo..."
 
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-results-collector.git" capsule-repo
-	git -C capsule-repo checkout 73cb90e9c321a6c06012681ca08d93b71e99d952 --quiet
+	git -C capsule-repo checkout aa4f29acefd7bf206af1c193ccf95afb883646fa --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -606,7 +604,7 @@ process nwb_subject {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-subject-nwb" capsule-repo
-    git -C capsule-repo checkout 6a3615779353c733622c7e65cd8aea12622b4b35 --quiet
+    git -C capsule-repo checkout e552ae1dadc901d09aa7b6211e2d21b53e43355d --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -644,7 +642,7 @@ process nwb_ecephys {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ecephys-nwb.git" capsule-repo
-	git -C capsule-repo checkout 5bbb7a8dc57058f2040ea0b3957dd345ca302795 --quiet
+	git -C capsule-repo checkout e1faeb6724d1b40293270304e7b6d60147180430 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -686,7 +684,7 @@ process nwb_units {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-units-nwb.git" capsule-repo
-	git -C capsule-repo checkout b532ec8dc7d1dc8751bb4de80941772465aaecd9 --quiet
+	git -C capsule-repo checkout d3c1bb7ea3279feda51fcf0c9f022bf714cf74e5 --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
