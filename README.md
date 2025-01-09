@@ -208,8 +208,8 @@ The steps that accept additional arguments are:
 
 ```bash
   --raise-if-fails      Whether to raise an error in case of failure or continue. Default True (raise)
-  --apply-motion-correction
-                        Whether to apply the sorter-specific motion correction. Default: True
+  --skip-motion-correction
+                        Whether to skip the sorter-specific motion correction. Default: False
   --min-drift-channels MIN_DRIFT_CHANNELS
                         Minimum number of channels to enable motion correction. Default is 96.
   --clear-cache         (only for Kilosort4) Force pytorch to free up memory reserved for its cache in between 
