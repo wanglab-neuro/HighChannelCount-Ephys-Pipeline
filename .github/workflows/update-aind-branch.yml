@@ -1,0 +1,45 @@
+name: Update AIND Branch
+
+on:
+  schedule:
+    # - cron: '0 0 * * *'  # Runs daily at midnight UTC
+    - cron: '0 0 * * 1'  # Runs every Monday at midnight UTC
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  update-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: aind-ephys  
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add AIND Repository as Remote
+        run: git remote add AIND-repo https://github.com/AllenNeuralDynamics/aind-ephys-pipeline.git
+
+      - name: Fetch Latest Changes
+        run: git fetch AIND-repo
+
+      - name: Merge Updates from AIND Repository
+        run: |
+          #  diff-algorithm=minimal can be used to reduce the likelihood of conflicts
+          git merge AIND-repo/main --strategy-option=theirs -m "Auto-merge updates from AIND repo"
+
+          #   git merge AIND-repo/main || true   # Continue even if conflicts arise
+
+          #   # Preserve specific files and directories
+          #   git checkout --ours README.md
+          #   git checkout --ours my-custom-folder/
+          #   git checkout --ours another-important-file.py
+
+          #   # Resolve merge and commit
+          #   git add .
+          #   git commit -m "Merged AIND updates while preserving custom changes"
+
+          git push origin aind-ephys
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
