@@ -36,14 +36,15 @@ jobs:
           #   git merge AIND-repo/main || true   # Continue even if conflicts arise
 
           #   # Preserve specific files and directories
-          #   git checkout --ours README.md
+          git checkout --ours README.md
           #   git checkout --ours my-custom-folder/
           #   git checkout --ours another-important-file.py
 
           #   # Resolve merge and commit
-          #   git add .
-          #   git commit -m "Merged AIND updates while preserving custom changes"
-
-          git push origin aind-ephys
+          git add .
+          git commit --amend -m "Auto-merge updates from AIND repo, preserving custom changes"
+          git push origin aind-ephys --force
+          
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
