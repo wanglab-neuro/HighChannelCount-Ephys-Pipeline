@@ -1,4 +1,11 @@
-# AIND Ephys Pipeline
+# High Channel Count Ephys Pipeline
+This branch is based on the [Neuropixel Ephys Spike Sorting Pipeline on Kempner AI Cluster](https://github.com/KempnerInstitute/kilosort25-spike-sorting) and the [AIND Ephys Pipeline](https://github.com/AllenNeuralDynamics/aind-ephys-pipeline). 
+
+Useful links:
+* [SpikeInterface](https://spikeinterface.readthedocs.io/en/latest/index.html)
+* [IBL pipeline and protocols](https://www.internationalbrainlab.com/repro-ephys)
+
+
 ## aind-ephys-pipeline
 
 Electrophysiology analysis pipeline with [SpikeInterface](https://github.com/SpikeInterface/spikeinterface).
