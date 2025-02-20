@@ -125,11 +125,13 @@ else if (sorter == 'spykingcircus2') {
 
 // capsule - Job Dispatch Ecephys
 process job_dispatch {
-	tag 'job-dispatch'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	// tag 'job-dispatch'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	tag 'capsule-5832718'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 4
-	memory '32 GB'
+	memory '128 GB'
 	time '1h'
 
 	input:
@@ -158,7 +160,8 @@ process job_dispatch {
 
 	echo "[${task.tag}] cloning git repo..."
 	git clone "https://github.com/AllenNeuralDynamics/aind-ephys-job-dispatch.git" capsule-repo
-	git -C capsule-repo -c core.fileMode=false checkout e86186dc31e33e5326648f2a28d5e780253e153a --quiet
+	# git -C capsule-repo -c core.fileMode=false checkout e86186dc31e33e5326648f2a28d5e780253e153a --quiet
+	git -C capsule-repo checkout 5d76d29ba2817cfc3bb6b35a06ce94cae22b815a --quiet
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
@@ -178,13 +181,19 @@ process job_dispatch {
 
 // capsule - Preprocess Ecephys
 process preprocessing {
-	tag 'preprocessing'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	// tag 'preprocessing'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+
+	// cpus 16
+	// memory '64 GB'
+	// // Allocate 4x recording duration
+	// time { max_duration_min.value.toFloat()*4 + 'm' }
+	tag 'capsule-4923505'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 16
-	memory '64 GB'
-	// Allocate 4x recording duration
-	time { max_duration_min.value.toFloat()*4 + 'm' }
+	memory '128 GB'
+	time '4h'
 
 	input:
 	env max_duration_min
@@ -228,16 +237,20 @@ process preprocessing {
 
 // capsule - Spikesort Kilosort2.5 Ecephys
 process spikesort_kilosort25 {
-	tag 'spikesort-kilosort25'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25:si-0.101.2'
+	// tag 'spikesort-kilosort25'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-spikesort-kilosort25:si-0.101.2'
+	tag 'capsule-2633671'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-spikesort-kilosort25_si-0.100.7.sif'
 	containerOptions '--nv'
 	clusterOptions '--gres=gpu:1'
 	module 'cuda'
 
 	cpus 16
-	memory '64 GB'
-	// Allocate 4x recording duration
-	time { max_duration_min.value.toFloat()*4 + 'm' }
+	// memory '64 GB'
+	// // Allocate 4x recording duration
+	// time { max_duration_min.value.toFloat()*4 + 'm' }
+	memory '128 GB'
+	time '4h'
 
 	input:
 	env max_duration_min
@@ -382,8 +395,10 @@ process spikesort_spykingcircus2 {
 
 // capsule - Postprocess Ecephys
 process postprocessing {
-	tag 'postprocessing'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	// tag 'postprocessing'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	tag 'capsule-5473620'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 16
 	memory '64 GB'
@@ -432,13 +447,19 @@ process postprocessing {
 
 // capsule - Curate Ecephys
 process curation {
-	tag 'curation'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	// tag 'curation'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
 
-	cpus 4
+	// cpus 4
+	// memory '32 GB'
+	// // Allocate 10min per recording hour. Minimum 10m
+	// time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
+	tag 'capsule-8866682'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
+
+	cpus 1
 	memory '32 GB'
-	// Allocate 10min per recording hour. Minimum 10m
-	time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
+	time '10min'
 
 	input:
 	env max_duration_min
@@ -478,13 +499,19 @@ process curation {
 
 // capsule - Unit Classifier Ecephys
 process unit_classifier {
-	tag 'unit-classifier'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-unit-classifier:si-0.101.2'
+	// tag 'unit-classifier'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-unit-classifier:si-0.101.2'
 
-	cpus 4
-	memory '32 GB'
-	// Allocate 30min per recording hour. Minimum 10m
-	time { max_duration_min.value.toFloat()*0.5 > 10 ? max_duration_min.value.toFloat()*0.5 + 'm' : '10m' }
+	// cpus 4
+	// memory '32 GB'
+	// // Allocate 30min per recording hour. Minimum 10m
+	// time { max_duration_min.value.toFloat()*0.5 > 10 ? max_duration_min.value.toFloat()*0.5 + 'm' : '10m' }
+	tag 'capsule-3820244'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-unit-classifier_si-0.100.7.sif'
+
+	cpus 8
+	memory '128 GB'
+	time '30min'
 
 	input:
 	env max_duration_min
@@ -524,13 +551,19 @@ process unit_classifier {
 
 // capsule - Visualize Ecephys
 process visualization {
-	tag 'visualization'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	// tag 'visualization'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+
+	// cpus 4
+	// memory '32 GB'
+	// // Allocate 2h per recording hour
+	// time { max_duration_min.value.toFloat()*2 + 'm' }
+	tag 'capsule-6668112'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 4
-	memory '32 GB'
-	// Allocate 2h per recording hour
-	time { max_duration_min.value.toFloat()*2 + 'm' }
+	memory '128 GB'
+	time '2h'
 
 	input:
 	env max_duration_min
@@ -576,13 +609,19 @@ process visualization {
 
 // capsule - Collect Results Ecephys
 process results_collector {
-	tag 'result-collector'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+	// tag 'result-collector'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-base:si-0.101.2'
+
+	// cpus 4
+	// memory '32 GB'
+	// // Allocate 1x recording duration
+	// time { max_duration_min.value.toFloat() > 10 ? max_duration_min.value.toFloat() + 'm' : '10m' }
+	tag 'capsule-4820071'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-base_si-0.100.7.sif'
 
 	cpus 4
-	memory '32 GB'
-	// Allocate 1x recording duration
-	time { max_duration_min.value.toFloat() > 10 ? max_duration_min.value.toFloat() + 'm' : '10m' }
+	memory '128 GB'
+	time '1h'
 
 	publishDir "$RESULTS_PATH", saveAs: { filename -> new File(filename).getName() }
 
@@ -631,13 +670,19 @@ process results_collector {
 
 // capsule - aind-subject-nwb
 process nwb_subject {
-	tag 'nwb-subject'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.101.2'
+	// tag 'nwb-subject'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.101.2'
+
+	// cpus 4
+	// memory '32 GB'
+	// // Allocate 10min per recording hour. Minimum 10m
+	// time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
+	tag 'capsule-9109637'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-nwb_si-0.100.7.sif'
 
 	cpus 4
-	memory '32 GB'
-	// Allocate 10min per recording hour. Minimum 10m
-	time { max_duration_min.value.toFloat()/6 > 10 ? max_duration_min.value.toFloat()/6 + 'm' : '10m' }
+	memory '128 GB'
+	time '10min'
 
 	input:
 	env max_duration_min
@@ -722,13 +767,19 @@ process nwb_ecephys {
 
 // capsule - aind-units-nwb
 process nwb_units {
-	tag 'nwb-units'
-	container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.101.2'
+	// tag 'nwb-units'
+	// container 'ghcr.io/allenneuraldynamics/aind-ephys-pipeline-nwb:si-0.101.2'
+
+	// cpus 4
+	// memory '32 GB'
+	// // Allocate 2x recording duration
+	// time { max_duration_min.value.toFloat()*2 + 'm' }
+	tag 'capsule-6946197'
+	container 'file:///${CONTAINER_DIR}/aind-ephys-pipeline-nwb_si-0.100.7.sif'
 
 	cpus 4
-	memory '32 GB'
-	// Allocate 2x recording duration
-	time { max_duration_min.value.toFloat()*2 + 'm' }
+	memory '128 GB'
+	time '2h'
 
 	publishDir "$RESULTS_PATH/nwb", saveAs: { filename -> new File(filename).getName() }
 
@@ -753,8 +804,11 @@ process nwb_units {
 	mkdir -p capsule/scratch
 
 	echo "[${task.tag}] cloning git repo..."
-	git clone "https://github.com/AllenNeuralDynamics/aind-units-nwb.git" capsule-repo
-	git -C capsule-repo -c core.fileMode=false checkout d3c1bb7ea3279feda51fcf0c9f022bf714cf74e5 --quiet
+	# git clone "https://github.com/AllenNeuralDynamics/aind-units-nwb.git" capsule-repo
+	# git -C capsule-repo -c core.fileMode=false checkout d3c1bb7ea3279feda51fcf0c9f022bf714cf74e5 --quiet
+	git clone "https://github.com/AllenNeuralDynamics/NWB_Packaging_Units.git" capsule-repo
+        git -C capsule-repo checkout ba80069df2bd0cea5ce771976fde4de462cccbde --quiet
+
 	mv capsule-repo/code capsule/code
 	rm -rf capsule-repo
 
