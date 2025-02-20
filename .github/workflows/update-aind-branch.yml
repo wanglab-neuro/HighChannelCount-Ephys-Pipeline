@@ -28,32 +28,10 @@ jobs:
           git config --global user.email "${{ secrets.GIT_USER_EMAIL }}"
           git config --global user.name "${{ secrets.GIT_USER_NAME }}"
 
-      # - name: Merge Updates from AIND Repository
-      #   run: |
-      #     #  diff-algorithm=minimal can be used to reduce the likelihood of conflicts
-      #     # Or use '-X ours'
-
-      #     git merge AIND-repo/main --strategy-option=theirs --allow-unrelated-histories -m "Auto-merge updates from AIND repo"
-
-      #     #   git merge AIND-repo/main || true   # Continue even if conflicts arise
-
-      #     #   # Preserve specific files and directories
-      #     git checkout --ours README.md
-      #     #   git checkout --ours my-custom-folder/
-      #     #   git checkout --ours another-important-file.py
-
-      #     #   # Resolve merge and commit
-      #     git add .
-      #     git commit --amend -m "Auto-merge updates from AIND repo, preserving custom changes"
-      #     git push origin aind-ephys --force
-
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Rebase Updates from AIND Repository
+      - name: Merge Updates from AIND Repository
         run: |
-          git rebase AIND-repo/main
-          git push origin aind-ephys --force
+          git merge AIND-repo/main -X ours --allow-unrelated-histories -m "Auto-merge updates from AIND repo"
+          git push origin aind-ephys
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
