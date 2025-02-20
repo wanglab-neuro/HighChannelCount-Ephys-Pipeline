@@ -26,7 +26,7 @@ jobs:
       - name: Merge Updates from AIND Repository
         run: |
           #  diff-algorithm=minimal can be used to reduce the likelihood of conflicts
-          git merge AIND-repo/main --strategy-option=theirs -m "Auto-merge updates from AIND repo"
+          git merge AIND-repo/main --strategy-option=theirs --allow-unrelated-histories -m "Auto-merge updates from AIND repo"
 
           #   git merge AIND-repo/main || true   # Continue even if conflicts arise
 
