@@ -241,6 +241,7 @@ process spikesort_kilosort25 {
 	containerOptions '--nv'
 	clusterOptions '--gres=gpu:1'
 	module 'cuda'
+	queue process.getProperty('gpu_queue')
 
 	cpus 16
 	memory '64 GB'
@@ -294,6 +295,7 @@ process spikesort_kilosort4 {
 	containerOptions '--nv'
 	clusterOptions '--gres=gpu:1'
 	module 'cuda'
+	queue process.getProperty('gpu_queue')
 
 	cpus 16
 	memory '64 GB'
