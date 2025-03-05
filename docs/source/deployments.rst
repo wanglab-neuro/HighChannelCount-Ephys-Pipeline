@@ -32,7 +32,8 @@ Configuration
 
    cp pipeline/nextflow_slurm.config pipeline/nextflow_slurm_custom.config
 
-3. Update the ``queue`` and ``gpu_queue`` parameters (they can be the same) in ``nextflow_slurm_custom.config`` to match your cluster's partitions.
+3. Update the ``params.default_queue`` and ``params.gpu_queue`` parameters in ``nextflow_slurm_custom.config`` to match your cluster's partitions.
+   The latter is only needed if different than the default queue.
 
 4. Create a new or modify the existing a submission script (``slurm_submit.sh``):
 
