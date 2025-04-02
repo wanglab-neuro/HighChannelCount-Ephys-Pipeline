@@ -30,8 +30,7 @@ jobs:
 
       - name: Merge Updates from AIND Repository
         run: |
-          git merge AIND-repo/main -X ours --allow-unrelated-histories -m "Auto-merge updates from AIND repo"
+          git merge AIND-repo/main --allow-unrelated-histories -m "Auto-merge updates from AIND repo"
           git push origin aind-ephys
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
