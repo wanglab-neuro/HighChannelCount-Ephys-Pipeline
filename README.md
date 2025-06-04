@@ -27,6 +27,7 @@ The pipeline is based on [Nextflow](https://www.nextflow.io/) and it includes th
 
 The documentation is available at [ReadTheDocs](https://aind-ephys-pipeline.readthedocs.io/en/latest/).
 
+
 ## Code Ocean Deployment (AIND)
 
 At AIND, the pipeline is deployed on the Code Ocean platform. Since currently Code Ocean does not support conditional processes, pipelines running different sorters and AIND-specific options are implemented in separate branches.
