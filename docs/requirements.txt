@@ -1,0 +1,5 @@
+sphinx
+furo
+sphinx-design
+numpydoc
+sphinxcontrib-jquery
