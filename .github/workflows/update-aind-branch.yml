@@ -6,9 +6,6 @@ on:
     - cron: '0 0 * * 2'  # Runs every Tuesday at midnight UTC
   workflow_dispatch:  # Allows manual triggering
 
-permissions:
-  contents: write
-
 jobs:
   update-branch:
     runs-on: ubuntu-latest
@@ -36,4 +33,4 @@ jobs:
           git merge AIND-repo/main --allow-unrelated-histories -m "Auto-merge updates from AIND repo"
           git push origin aind-ephys
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_FOR_WORKFLOWS }}
