@@ -6,6 +6,9 @@ on:
     - cron: '0 0 * * 2'  # Runs every Tuesday at midnight UTC
   workflow_dispatch:  # Allows manual triggering
 
+permissions:
+  contents: write
+
 jobs:
   update-branch:
     runs-on: ubuntu-latest
