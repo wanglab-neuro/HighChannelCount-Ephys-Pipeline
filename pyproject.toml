@@ -1,0 +1,7 @@
+[project]
+name = "hcce"
+version = "0.1.0"
+description = "High Channel Count Electrophysiology (HCCE) Analysis Pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["ipython", "numpy", "scipy", "matplotlib"]
